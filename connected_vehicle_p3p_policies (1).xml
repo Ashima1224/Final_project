@@ -1,0 +1,2281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Connected Vehicle Privacy Policy - Complete P3P Implementation
+  ================================================================
+  This document contains P3P-compliant privacy policies for all connected vehicle services.
+  
+  Structure:
+  - 7 Service Types (Map, Emergency, Safety, OEM, ThirdParty, App, Logistic)
+  - 4 Purposes per Service Type (28 total)
+  - 4 Options (a-d) per Purpose (112 total statements)
+  
+  Extensions (namespaced as cv:):
+  - cv:context      → runtime conditions (roadType, timeOfDay, homeDistance, emergencyStatus, speed)
+  - cv:transform    → data transformations (anonymize, generalize, pseudonymize)
+  - cv:processing   → processing modes (localOnly, aggregate, deny, requireConsent)
+  - cv:priority     → conflict resolution weight (higher = stronger preference)
+  
+  Priority Scale:
+  - 100: Emergency Override
+  - 90: Deny / Local-only
+  - 80: Anonymize / Aggregate
+  - 70: Pseudonymize
+  - 60: Generalize / Context-restricted
+  - 40: Allow Precise
+  
+  References:
+  - W3C P3P: https://www.w3.org/TR/P3P/
+  - EDPB Guidelines: https://www.edpb.europa.eu/sites/default/files/consultation/edpb_guidelines_202001_connectedvehicles.pdf
+  - ACEA Principles: https://www.acea.auto/files/ACEA_Principles_of_Data_Protection.pdf
+-->
+
+<POLICIES xmlns="http://www.w3.org/2002/01/P3Pv1"
+          xmlns:cv="urn:connected-vehicle:p3p:ext">
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 1: MAP / NAVIGATION SERVICE                                       -->
+<!-- ============================================================================== -->
+
+<POLICY name="MapNavigationService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 1.1: Navigation (needs location)          -->
+  <!-- Question: "For Navigation, how should the service access your location?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise location always -->
+  <STATEMENT id="map-nav-a">
+    <PURPOSE><navigation/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.heading"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-navigation-a</cv:optionId>
+      <cv:optionLabel>Allow precise location always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow precise location only when RoadType is Highway/Regional (deny in Residential) -->
+  <STATEMENT id="map-nav-b">
+    <PURPOSE><navigation/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.heading"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-navigation-b</cv:optionId>
+      <cv:optionLabel>Allow precise location only on Highway/Regional roads</cv:optionLabel>
+      <cv:context>
+        <cv:roadType allowed="Highway,Regional"/>
+        <cv:roadType denied="Residential"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Generalize location to 100m (always) + deny at Night -->
+  <STATEMENT id="map-nav-c">
+    <PURPOSE><navigation/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-navigation-c</cv:optionId>
+      <cv:optionLabel>Generalize location to 100m, deny at night</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize radius="100m"/>
+      </cv:transform>
+      <cv:context>
+        <cv:timeOfDay denied="Night"/>
+      </cv:context>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Local-only: process route on-device; share only destination category -->
+  <STATEMENT id="map-nav-d">
+    <PURPOSE><navigation/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.navigationdestination.category"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-navigation-d</cv:optionId>
+      <cv:optionLabel>Local-only routing, share only destination category</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 1.2: Traffic Detection (needs speed + coarse location) -->
+  <!-- Question: "For traffic detection, what do you want to share?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow speed + precise location -->
+  <STATEMENT id="map-traffic-a">
+    <PURPOSE><current/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-traffic-a</cv:optionId>
+      <cv:optionLabel>Allow speed + precise location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow speed + generalized location (1km) -->
+  <STATEMENT id="map-traffic-b">
+    <PURPOSE><current/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-traffic-b</cv:optionId>
+      <cv:optionLabel>Allow speed + generalized location (1km)</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize radius="1km"/>
+      </cv:transform>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Anonymize/aggregate: share average speed per 5 minutes + road segment only -->
+  <STATEMENT id="map-traffic-c">
+    <PURPOSE><current/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#location.roadsegment"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-traffic-c</cv:optionId>
+      <cv:optionLabel>Anonymize/aggregate: average speed per 5min + road segment only</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="5min" scope="road-segment"/>
+      </cv:processing>
+      <cv:transform>
+        <cv:anonymize/>
+      </cv:transform>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny completely (still allow navigation but no traffic contribution) -->
+  <STATEMENT id="map-traffic-d">
+    <PURPOSE><current/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>map-traffic-d</cv:optionId>
+      <cv:optionLabel>Deny traffic data sharing completely</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 1.3: ETA Improvement / Route Optimization -->
+  <!-- Question: "To improve ETA accuracy, what can be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow speed + acceleration always -->
+  <STATEMENT id="map-eta-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.acceleration"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-eta-a</cv:optionId>
+      <cv:optionLabel>Allow speed + acceleration always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only speed (deny acceleration/braking) -->
+  <STATEMENT id="map-eta-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-eta-b</cv:optionId>
+      <cv:optionLabel>Allow only speed (deny acceleration/braking)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#behavior.acceleration"/>
+        <cv:deny dataRef="#behavior.braking"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Aggregate only: share speed buckets (Low/Medium/High) -->
+  <STATEMENT id="map-eta-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed.category"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-eta-c</cv:optionId>
+      <cv:optionLabel>Aggregate only: speed buckets (Low/Medium/High)</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate type="category" buckets="Low,Medium,High"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Allow only during daytime (Morning/Afternoon); deny Evening/Night -->
+  <STATEMENT id="map-eta-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.acceleration"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-eta-d</cv:optionId>
+      <cv:optionLabel>Allow only during daytime (Morning/Afternoon)</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay allowed="Morning,Afternoon"/>
+        <cv:timeOfDay denied="Evening,Night"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 1.4: Nearby Suggestions (POI)             -->
+  <!-- Question: "For nearby suggestions (restaurants/charging), what location access is OK?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise location -->
+  <STATEMENT id="map-poi-a">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-poi-a</cv:optionId>
+      <cv:optionLabel>Allow precise location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Generalize to city/area only -->
+  <STATEMENT id="map-poi-b">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.city"/>
+      <DATA ref="#location.area"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-poi-b</cv:optionId>
+      <cv:optionLabel>Generalize to city/area only</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize level="city"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only when 100m+ away from home (proximity context) -->
+  <STATEMENT id="map-poi-c">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>map-poi-c</cv:optionId>
+      <cv:optionLabel>Allow only when 100m+ away from home</cv:optionLabel>
+      <cv:context>
+        <cv:homeDistance minimum="100m"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny suggestions (no location used) -->
+  <STATEMENT id="map-poi-d">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>map-poi-d</cv:optionId>
+      <cv:optionLabel>Deny suggestions (no location used)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 2: EMERGENCY SERVICE (eCall, incidents, theft)                    -->
+<!-- ============================================================================== -->
+
+<POLICY name="EmergencyService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 2.1: eCall / Crash Response               -->
+  <!-- Question: "In a crash/emergency, what should be shared automatically?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise location + VIN + speed at impact (EmergencyStatus=true only) -->
+  <STATEMENT id="emerg-ecall-a">
+    <PURPOSE><other-purpose>emergency-response</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><legal-requirement/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#identity.vin"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-ecall-a</cv:optionId>
+      <cv:optionLabel>Allow precise location + VIN + speed (emergency only)</cv:optionLabel>
+      <cv:context>
+        <cv:emergencyStatus>true</cv:emergencyStatus>
+      </cv:context>
+      <cv:priority>100</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow precise location only (no VIN; pseudonym ID) -->
+  <STATEMENT id="emerg-ecall-b">
+    <PURPOSE><other-purpose>emergency-response</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><legal-requirement/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#identity.pseudonymid"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-ecall-b</cv:optionId>
+      <cv:optionLabel>Allow precise location only, pseudonym ID</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize dataRef="#identity.vin"/>
+      </cv:transform>
+      <cv:context>
+        <cv:emergencyStatus>true</cv:emergencyStatus>
+      </cv:context>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Ask consent each time (warning: may delay response) -->
+  <STATEMENT id="emerg-ecall-c">
+    <PURPOSE><other-purpose>emergency-response</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><legal-requirement/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#identity.vin"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-ecall-c</cv:optionId>
+      <cv:optionLabel>Ask consent each time (may delay response)</cv:optionLabel>
+      <cv:processing>
+        <cv:requireConsent>true</cv:requireConsent>
+      </cv:processing>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny automatic sharing (not recommended) -->
+  <STATEMENT id="emerg-ecall-d">
+    <PURPOSE><other-purpose>emergency-response</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>emerg-ecall-d</cv:optionId>
+      <cv:optionLabel>Deny automatic emergency sharing (not recommended)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 2.2: Breakdown Assistance                 -->
+  <!-- Question: "For roadside help, what do you want to share?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow location + vehicle health (Fuel/Battery/RPM) -->
+  <STATEMENT id="emerg-breakdown-a">
+    <PURPOSE><other-purpose>roadside-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><delivery/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-breakdown-a</cv:optionId>
+      <cv:optionLabel>Allow location + vehicle health data</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only location (health denied) -->
+  <STATEMENT id="emerg-breakdown-b">
+    <PURPOSE><other-purpose>roadside-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><delivery/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-breakdown-b</cv:optionId>
+      <cv:optionLabel>Allow only location (health denied)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#health.*"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Generalize location to 1km + allow health -->
+  <STATEMENT id="emerg-breakdown-c">
+    <PURPOSE><other-purpose>roadside-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><delivery/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-breakdown-c</cv:optionId>
+      <cv:optionLabel>Generalize location to 1km + allow health</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize radius="1km"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny (user must manually describe location) -->
+  <STATEMENT id="emerg-breakdown-d">
+    <PURPOSE><other-purpose>roadside-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><delivery/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>emerg-breakdown-d</cv:optionId>
+      <cv:optionLabel>Deny (manual location description required)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 2.3: Hazard Warning Broadcast             -->
+  <!-- Question: "To warn others about hazards, what can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise location + hazard type -->
+  <STATEMENT id="emerg-hazard-a">
+    <PURPOSE><other-purpose>hazard-warning</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#safety.hazardtype"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-hazard-a</cv:optionId>
+      <cv:optionLabel>Allow precise location + hazard type</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Share generalized area only (no precise GPS) -->
+  <STATEMENT id="emerg-hazard-b">
+    <PURPOSE><other-purpose>hazard-warning</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.area"/>
+      <DATA ref="#safety.hazardtype"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-hazard-b</cv:optionId>
+      <cv:optionLabel>Share generalized area only (no precise GPS)</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize level="area"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Local-only: detect hazard in car; share only hazard type without location -->
+  <STATEMENT id="emerg-hazard-c">
+    <PURPOSE><other-purpose>hazard-warning</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#safety.hazardtype"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-hazard-c</cv:optionId>
+      <cv:optionLabel>Local-only detection, share hazard type only (no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+        <cv:deny dataRef="#location.*"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny sharing (still receive warnings) -->
+  <STATEMENT id="emerg-hazard-d">
+    <PURPOSE><other-purpose>hazard-warning</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>emerg-hazard-d</cv:optionId>
+      <cv:optionLabel>Deny sharing (still receive warnings)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+        <cv:receiveOnly>true</cv:receiveOnly>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 2.4: Stolen Vehicle Tracking              -->
+  <!-- Question: "If your car is stolen, what tracking is allowed?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise tracking (only when theft flag is active) -->
+  <STATEMENT id="emerg-theft-a">
+    <PURPOSE><other-purpose>theft-recovery</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-theft-a</cv:optionId>
+      <cv:optionLabel>Allow precise tracking (theft flag active only)</cv:optionLabel>
+      <cv:context>
+        <cv:theftStatus>true</cv:theftStatus>
+      </cv:context>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow generalized tracking (1km) + time-limited (e.g., 24h) -->
+  <STATEMENT id="emerg-theft-b">
+    <PURPOSE><other-purpose>theft-recovery</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-theft-b</cv:optionId>
+      <cv:optionLabel>Allow generalized tracking (1km) + time-limited 24h</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize radius="1km"/>
+      </cv:transform>
+      <cv:context>
+        <cv:theftStatus>true</cv:theftStatus>
+        <cv:timeLimit duration="24h"/>
+      </cv:context>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only when speed > 0 (moving) -->
+  <STATEMENT id="emerg-theft-c">
+    <PURPOSE><other-purpose>theft-recovery</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>emerg-theft-c</cv:optionId>
+      <cv:optionLabel>Allow only when vehicle is moving (speed > 0)</cv:optionLabel>
+      <cv:context>
+        <cv:theftStatus>true</cv:theftStatus>
+        <cv:minSpeed value="0" operator="gt"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny tracking (manual police process) -->
+  <STATEMENT id="emerg-theft-d">
+    <PURPOSE><other-purpose>theft-recovery</other-purpose></PURPOSE>
+    <RECIPIENT><public/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>emerg-theft-d</cv:optionId>
+      <cv:optionLabel>Deny tracking (manual police process)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 3: SAFETY / ADAS SERVICE                                          -->
+<!-- ============================================================================== -->
+
+<POLICY name="SafetyADASService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 3.1: Driver Assistance (lane/steering support) -->
+  <!-- Question: "For driver assistance, how should steering/behavior be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow steering angle + speed always -->
+  <STATEMENT id="safety-assist-a">
+    <PURPOSE><other-purpose>driver-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.steeringangle"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-assist-a</cv:optionId>
+      <cv:optionLabel>Allow steering angle + speed always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only when speed > 60 (highway driving context) -->
+  <STATEMENT id="safety-assist-b">
+    <PURPOSE><other-purpose>driver-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.steeringangle"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-assist-b</cv:optionId>
+      <cv:optionLabel>Allow only when speed > 60 (highway driving)</cv:optionLabel>
+      <cv:context>
+        <cv:minSpeed value="60"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Local-only: compute safety score in-vehicle, share only score -->
+  <STATEMENT id="safety-assist-c">
+    <PURPOSE><other-purpose>driver-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.safetyscore"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-assist-c</cv:optionId>
+      <cv:optionLabel>Local-only: share safety score only (no raw steering)</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+        <cv:aggregate type="score"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny steering data (feature may degrade) -->
+  <STATEMENT id="safety-assist-d">
+    <PURPOSE><other-purpose>driver-assistance</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>safety-assist-d</cv:optionId>
+      <cv:optionLabel>Deny steering data (feature may degrade)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 3.2: Driver Behavior Scoring              -->
+  <!-- Question: "For safety scoring (braking/acceleration), what's allowed?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow exact acceleration + braking events -->
+  <STATEMENT id="safety-behavior-a">
+    <PURPOSE><other-purpose>behavior-scoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.acceleration"/>
+      <DATA ref="#behavior.braking"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-behavior-a</cv:optionId>
+      <cv:optionLabel>Allow exact acceleration + braking events</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Generalize to categories (Normal/Harsh) only -->
+  <STATEMENT id="safety-behavior-b">
+    <PURPOSE><other-purpose>behavior-scoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.acceleration.category"/>
+      <DATA ref="#behavior.braking.category"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-behavior-b</cv:optionId>
+      <cv:optionLabel>Generalize to categories (Normal/Harsh) only</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize type="category" buckets="Normal,Harsh"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Aggregate daily summary only (no real-time stream) -->
+  <STATEMENT id="safety-behavior-c">
+    <PURPOSE><other-purpose>behavior-scoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.dailysummary"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-behavior-c</cv:optionId>
+      <cv:optionLabel>Aggregate daily summary only (no real-time stream)</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="daily"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny behavior scoring -->
+  <STATEMENT id="safety-behavior-d">
+    <PURPOSE><other-purpose>behavior-scoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>safety-behavior-d</cv:optionId>
+      <cv:optionLabel>Deny behavior scoring</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 3.3: Speed Limit / Violation Alerts       -->
+  <!-- Question: "For overspeed alerts, what should be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow speed + precise location -->
+  <STATEMENT id="safety-speedalert-a">
+    <PURPOSE><other-purpose>speed-alerts</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-speedalert-a</cv:optionId>
+      <cv:optionLabel>Allow speed + precise location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow speed only (no location) -->
+  <STATEMENT id="safety-speedalert-b">
+    <PURPOSE><other-purpose>speed-alerts</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-speedalert-b</cv:optionId>
+      <cv:optionLabel>Allow speed only (no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.latitude"/>
+        <cv:deny dataRef="#location.longitude"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Local-only: alert in-car; no data leaves vehicle -->
+  <STATEMENT id="safety-speedalert-c">
+    <PURPOSE><other-purpose>speed-alerts</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-speedalert-c</cv:optionId>
+      <cv:optionLabel>Local-only: alert in-car, no data leaves vehicle</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny (no alerts) -->
+  <STATEMENT id="safety-speedalert-d">
+    <PURPOSE><other-purpose>speed-alerts</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>safety-speedalert-d</cv:optionId>
+      <cv:optionLabel>Deny (no speed alerts)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 3.4: Night Safety Mode                    -->
+  <!-- Question: "At night, how should safety telemetry be handled?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow safety telemetry at Night (higher sensitivity) -->
+  <STATEMENT id="safety-night-a">
+    <PURPOSE><other-purpose>night-safety</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.acceleration"/>
+      <DATA ref="#behavior.braking"/>
+      <DATA ref="#behavior.steeringangle"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-night-a</cv:optionId>
+      <cv:optionLabel>Allow safety telemetry at night (higher sensitivity)</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay>Night</cv:timeOfDay>
+      </cv:context>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only minimal data (speed + braking category) -->
+  <STATEMENT id="safety-night-b">
+    <PURPOSE><other-purpose>night-safety</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.braking.category"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-night-b</cv:optionId>
+      <cv:optionLabel>Allow only minimal data (speed + braking category)</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay>Night</cv:timeOfDay>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only if EmergencyStatus=true -->
+  <STATEMENT id="safety-night-c">
+    <PURPOSE><other-purpose>night-safety</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.acceleration"/>
+      <DATA ref="#behavior.braking"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>safety-night-c</cv:optionId>
+      <cv:optionLabel>Allow only if EmergencyStatus=true</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay>Night</cv:timeOfDay>
+        <cv:emergencyStatus>true</cv:emergencyStatus>
+      </cv:context>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny at Night entirely -->
+  <STATEMENT id="safety-night-d">
+    <PURPOSE><other-purpose>night-safety</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>safety-night-d</cv:optionId>
+      <cv:optionLabel>Deny at night entirely</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay>Night</cv:timeOfDay>
+      </cv:context>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 4: OEM SERVICE (Manufacturer Services)                            -->
+<!-- ============================================================================== -->
+
+<POLICY name="OEMService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 4.1: Predictive Maintenance               -->
+  <!-- Question: "For predictive maintenance, what vehicle health data sharing is OK?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow health data (Fuel/Battery/RPM/EngineLoad) always -->
+  <STATEMENT id="oem-maintenance-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.engineload"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-maintenance-a</cv:optionId>
+      <cv:optionLabel>Allow health data always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only when FuelLevel < 20% or BatteryLevel < 20% (context trigger) -->
+  <STATEMENT id="oem-maintenance-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.engineload"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-maintenance-b</cv:optionId>
+      <cv:optionLabel>Allow only when FuelLevel &lt; 20% or BatteryLevel &lt; 20%</cv:optionLabel>
+      <cv:context>
+        <cv:condition type="or">
+          <cv:fuelLevel operator="lt" value="20"/>
+          <cv:batteryLevel operator="lt" value="20"/>
+        </cv:condition>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Aggregate weekly summary only (no live stream) -->
+  <STATEMENT id="oem-maintenance-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.weeklysummary"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-maintenance-c</cv:optionId>
+      <cv:optionLabel>Aggregate weekly summary only (no live stream)</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="weekly"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny (manual service only) -->
+  <STATEMENT id="oem-maintenance-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>oem-maintenance-d</cv:optionId>
+      <cv:optionLabel>Deny (manual service only)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 4.2: Software Updates (OTA)               -->
+  <!-- Question: "For software updates, what identity/software info can be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow VIN + SoftwareVersion always -->
+  <STATEMENT id="oem-ota-a">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#identity.vin"/>
+      <DATA ref="#software.version"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-ota-a</cv:optionId>
+      <cv:optionLabel>Allow VIN + SoftwareVersion always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Pseudonymize VIN (rotating ID) + allow SoftwareVersion -->
+  <STATEMENT id="oem-ota-b">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#identity.pseudonymvin"/>
+      <DATA ref="#software.version"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-ota-b</cv:optionId>
+      <cv:optionLabel>Pseudonymize VIN (rotating ID) + allow SoftwareVersion</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize dataRef="#identity.vin" rotation="periodic"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow SoftwareVersion only (no VIN) -->
+  <STATEMENT id="oem-ota-c">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#software.version"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-ota-c</cv:optionId>
+      <cv:optionLabel>Allow SoftwareVersion only (no VIN)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#identity.vin"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny automatic update checks (manual updates) -->
+  <STATEMENT id="oem-ota-d">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>oem-ota-d</cv:optionId>
+      <cv:optionLabel>Deny automatic update checks (manual updates)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 4.3: Product Improvement / Analytics      -->
+  <!-- Question: "For improving vehicle models, what data can OEM use?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow anonymized aggregates only (fleet statistics) -->
+  <STATEMENT id="oem-analytics-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><indefinitely/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#fleet.statistics"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-analytics-a</cv:optionId>
+      <cv:optionLabel>Allow anonymized aggregates only (fleet statistics)</cv:optionLabel>
+      <cv:transform>
+        <cv:anonymize/>
+      </cv:transform>
+      <cv:processing>
+        <cv:aggregate scope="fleet"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow pseudonymized trip data (no direct VIN) -->
+  <STATEMENT id="oem-analytics-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#trip.data"/>
+      <DATA ref="#identity.pseudonymid"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-analytics-b</cv:optionId>
+      <cv:optionLabel>Allow pseudonymized trip data (no direct VIN)</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize dataRef="#identity.vin"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only non-location data (health + behavior categories) -->
+  <STATEMENT id="oem-analytics-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.summary"/>
+      <DATA ref="#behavior.categories"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-analytics-c</cv:optionId>
+      <cv:optionLabel>Allow only non-location data (health + behavior categories)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.*"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny analytics -->
+  <STATEMENT id="oem-analytics-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>oem-analytics-d</cv:optionId>
+      <cv:optionLabel>Deny analytics</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 4.4: Warranty / Diagnostics               -->
+  <!-- Question: "For diagnostics, what should be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow health + fault codes + VIN -->
+  <STATEMENT id="oem-diagnostics-a">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.faultcodes"/>
+      <DATA ref="#identity.vin"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-diagnostics-a</cv:optionId>
+      <cv:optionLabel>Allow health + fault codes + VIN</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow health + fault codes, pseudonymize VIN -->
+  <STATEMENT id="oem-diagnostics-b">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.faultcodes"/>
+      <DATA ref="#identity.pseudonymvin"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-diagnostics-b</cv:optionId>
+      <cv:optionLabel>Allow health + fault codes, pseudonymize VIN</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize dataRef="#identity.vin"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only fault codes (no VIN, no location) -->
+  <STATEMENT id="oem-diagnostics-c">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.faultcodes"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>oem-diagnostics-c</cv:optionId>
+      <cv:optionLabel>Allow only fault codes (no VIN, no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#identity.vin"/>
+        <cv:deny dataRef="#location.*"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny remote diagnostics -->
+  <STATEMENT id="oem-diagnostics-d">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>oem-diagnostics-d</cv:optionId>
+      <cv:optionLabel>Deny remote diagnostics</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 5: THIRD PARTY SERVICE                                            -->
+<!-- ============================================================================== -->
+
+<POLICY name="ThirdPartyService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 5.1: Third-party Infotainment Sharing     -->
+  <!-- Question: "For third-party apps (music/voice assistant), what infotainment data can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow MediaSource + UserInput + NavigationDestination -->
+  <STATEMENT id="thirdparty-infotainment-a">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+      <DATA ref="#infotainment.userinput"/>
+      <DATA ref="#infotainment.navigationdestination"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-infotainment-a</cv:optionId>
+      <cv:optionLabel>Allow MediaSource + UserInput + NavigationDestination</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow MediaSource only (deny UserInput and Destination) -->
+  <STATEMENT id="thirdparty-infotainment-b">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-infotainment-b</cv:optionId>
+      <cv:optionLabel>Allow MediaSource only (deny UserInput and Destination)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#infotainment.userinput"/>
+        <cv:deny dataRef="#infotainment.navigationdestination"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only generalized destination (city-level) + deny UserInput -->
+  <STATEMENT id="thirdparty-infotainment-c">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+      <DATA ref="#infotainment.navigationdestination.city"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-infotainment-c</cv:optionId>
+      <cv:optionLabel>Allow only generalized destination (city-level) + deny UserInput</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize dataRef="#infotainment.navigationdestination" level="city"/>
+      </cv:transform>
+      <cv:processing>
+        <cv:deny dataRef="#infotainment.userinput"/>
+      </cv:processing>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny all infotainment data sharing (local use only) -->
+  <STATEMENT id="thirdparty-infotainment-d">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>thirdparty-infotainment-d</cv:optionId>
+      <cv:optionLabel>Deny all infotainment data sharing (local use only)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+        <cv:localOnly>true</cv:localOnly>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 5.2: Maintenance Sharing to Repair Shop   -->
+  <!-- Question: "For external repair shops, what health data can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow health + VIN -->
+  <STATEMENT id="thirdparty-repair-a">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.engineload"/>
+      <DATA ref="#health.faultcodes"/>
+      <DATA ref="#identity.vin"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-repair-a</cv:optionId>
+      <cv:optionLabel>Allow health + VIN</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow health, pseudonymize VIN -->
+  <STATEMENT id="thirdparty-repair-b">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.batterylevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.engineload"/>
+      <DATA ref="#health.faultcodes"/>
+      <DATA ref="#identity.pseudonymvin"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-repair-b</cv:optionId>
+      <cv:optionLabel>Allow health, pseudonymize VIN</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize dataRef="#identity.vin"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only aggregated health summary (no live stream) -->
+  <STATEMENT id="thirdparty-repair-c">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.summary"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-repair-c</cv:optionId>
+      <cv:optionLabel>Allow only aggregated health summary (no live stream)</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate type="summary"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny third-party maintenance access -->
+  <STATEMENT id="thirdparty-repair-d">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>thirdparty-repair-d</cv:optionId>
+      <cv:optionLabel>Deny third-party maintenance access</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 5.3: Insurance / Driving Profile          -->
+  <!-- Question: "For insurance-style apps, what driving data can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow speed + braking + location -->
+  <STATEMENT id="thirdparty-insurance-a">
+    <PURPOSE><other-purpose>insurance-profile</other-purpose></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.braking"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-insurance-a</cv:optionId>
+      <cv:optionLabel>Allow speed + braking + location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow speed + braking (no location) -->
+  <STATEMENT id="thirdparty-insurance-b">
+    <PURPOSE><other-purpose>insurance-profile</other-purpose></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.braking"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-insurance-b</cv:optionId>
+      <cv:optionLabel>Allow speed + braking (no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.latitude"/>
+        <cv:deny dataRef="#location.longitude"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Generalize speed to buckets + aggregate daily totals -->
+  <STATEMENT id="thirdparty-insurance-c">
+    <PURPOSE><other-purpose>insurance-profile</other-purpose></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed.bucket"/>
+      <DATA ref="#behavior.dailytotals"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-insurance-c</cv:optionId>
+      <cv:optionLabel>Generalize speed to buckets + aggregate daily totals</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize dataRef="#location.speed" type="bucket"/>
+      </cv:transform>
+      <cv:processing>
+        <cv:aggregate interval="daily"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny insurance tracking -->
+  <STATEMENT id="thirdparty-insurance-d">
+    <PURPOSE><other-purpose>insurance-profile</other-purpose></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>thirdparty-insurance-d</cv:optionId>
+      <cv:optionLabel>Deny insurance tracking</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 5.4: Data Resale / Marketing              -->
+  <!-- Question: "Allow third party to use data for marketing?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow anonymized aggregates only -->
+  <STATEMENT id="thirdparty-marketing-a">
+    <PURPOSE><marketing/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><indefinitely/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#aggregate.statistics"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-marketing-a</cv:optionId>
+      <cv:optionLabel>Allow anonymized aggregates only</cv:optionLabel>
+      <cv:transform>
+        <cv:anonymize/>
+      </cv:transform>
+      <cv:processing>
+        <cv:aggregate scope="all"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow pseudonymized data only (no identity) -->
+  <STATEMENT id="thirdparty-marketing-b">
+    <PURPOSE><marketing/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.categories"/>
+      <DATA ref="#identity.pseudonymid"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-marketing-b</cv:optionId>
+      <cv:optionLabel>Allow pseudonymized data only (no identity)</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only if 100m+ away from home and not at Night -->
+  <STATEMENT id="thirdparty-marketing-c">
+    <PURPOSE><marketing/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+      <DATA ref="#behavior.categories"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>thirdparty-marketing-c</cv:optionId>
+      <cv:optionLabel>Allow only if 100m+ away from home and not at Night</cv:optionLabel>
+      <cv:context>
+        <cv:homeDistance minimum="100m"/>
+        <cv:timeOfDay denied="Night"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny marketing use entirely -->
+  <STATEMENT id="thirdparty-marketing-d">
+    <PURPOSE><marketing/></PURPOSE>
+    <RECIPIENT><other-recipient/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>thirdparty-marketing-d</cv:optionId>
+      <cv:optionLabel>Deny marketing use entirely</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 6: APP SERVICE (In-vehicle apps, phone companion apps)            -->
+<!-- ============================================================================== -->
+
+<POLICY name="AppService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 6.1: Personalization                      -->
+  <!-- Question: "For app personalization, what can be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow infotainment + location -->
+  <STATEMENT id="app-personalization-a">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+      <DATA ref="#infotainment.preferences"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-personalization-a</cv:optionId>
+      <cv:optionLabel>Allow infotainment + location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow infotainment only (no location) -->
+  <STATEMENT id="app-personalization-b">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+      <DATA ref="#infotainment.preferences"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-personalization-b</cv:optionId>
+      <cv:optionLabel>Allow infotainment only (no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.*"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Generalize location to city-level only -->
+  <STATEMENT id="app-personalization-c">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.mediasource"/>
+      <DATA ref="#infotainment.preferences"/>
+      <DATA ref="#location.city"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-personalization-c</cv:optionId>
+      <cv:optionLabel>Generalize location to city-level only</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize dataRef="#location" level="city"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny personalization (generic mode) -->
+  <STATEMENT id="app-personalization-d">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>app-personalization-d</cv:optionId>
+      <cv:optionLabel>Deny personalization (generic mode)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 6.2: Remote Control Features              -->
+  <!-- Question: "For remote features (lock/unlock/locate), what's allowed?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow remote commands + precise location -->
+  <STATEMENT id="app-remote-a">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#control.remotecommands"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-remote-a</cv:optionId>
+      <cv:optionLabel>Allow remote commands + precise location</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow commands but deny location -->
+  <STATEMENT id="app-remote-b">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#control.remotecommands"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-remote-b</cv:optionId>
+      <cv:optionLabel>Allow commands but deny location</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.*"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only when user is authenticated + daytime only -->
+  <STATEMENT id="app-remote-c">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#control.remotecommands"/>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-remote-c</cv:optionId>
+      <cv:optionLabel>Allow only when authenticated + daytime only</cv:optionLabel>
+      <cv:context>
+        <cv:authenticated>true</cv:authenticated>
+        <cv:timeOfDay allowed="Morning,Afternoon"/>
+        <cv:timeOfDay denied="Evening,Night"/>
+      </cv:context>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny remote control -->
+  <STATEMENT id="app-remote-d">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>app-remote-d</cv:optionId>
+      <cv:optionLabel>Deny remote control</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 6.3: App Analytics / Crash Reports        -->
+  <!-- Question: "For app analytics, what data can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow pseudonymized usage logs -->
+  <STATEMENT id="app-analytics-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#app.usagelogs"/>
+      <DATA ref="#identity.pseudonymid"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-analytics-a</cv:optionId>
+      <cv:optionLabel>Allow pseudonymized usage logs</cv:optionLabel>
+      <cv:transform>
+        <cv:pseudonymize/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow anonymized aggregates only -->
+  <STATEMENT id="app-analytics-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#app.aggregatestatistics"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-analytics-b</cv:optionId>
+      <cv:optionLabel>Allow anonymized aggregates only</cv:optionLabel>
+      <cv:transform>
+        <cv:anonymize/>
+      </cv:transform>
+      <cv:processing>
+        <cv:aggregate scope="all"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only local logs (never sent) -->
+  <STATEMENT id="app-analytics-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#app.usagelogs"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-analytics-c</cv:optionId>
+      <cv:optionLabel>Allow only local logs (never sent)</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+      </cv:processing>
+      <cv:priority>85</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny analytics -->
+  <STATEMENT id="app-analytics-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>app-analytics-d</cv:optionId>
+      <cv:optionLabel>Deny analytics</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 6.4: Voice Assistant                      -->
+  <!-- Question: "For voice assistant, what user input handling is OK?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow voice commands stored in cloud -->
+  <STATEMENT id="app-voice-a">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><indefinitely/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.voiceaudio"/>
+      <DATA ref="#infotainment.voicecommand"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-voice-a</cv:optionId>
+      <cv:optionLabel>Allow voice commands stored in cloud</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Local-only: process voice locally, don't store raw audio -->
+  <STATEMENT id="app-voice-b">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.voicecommand"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-voice-b</cv:optionId>
+      <cv:optionLabel>Local-only: process voice locally, no raw audio storage</cv:optionLabel>
+      <cv:processing>
+        <cv:localOnly>true</cv:localOnly>
+        <cv:deny dataRef="#infotainment.voiceaudio"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Allow only command intent (text), no raw audio -->
+  <STATEMENT id="app-voice-c">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#infotainment.voiceintent"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>app-voice-c</cv:optionId>
+      <cv:optionLabel>Allow only command intent (text), no raw audio</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#infotainment.voiceaudio"/>
+      </cv:processing>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny voice assistant -->
+  <STATEMENT id="app-voice-d">
+    <PURPOSE><tailoring/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>app-voice-d</cv:optionId>
+      <cv:optionLabel>Deny voice assistant</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 7: LOGISTIC SERVICE (Fleet/Transport)                             -->
+<!-- ============================================================================== -->
+
+<POLICY name="LogisticService">
+
+  <!-- ================================================= -->
+  <!-- Purpose 7.1: Fleet Tracking                       -->
+  <!-- Question: "For fleet tracking, how should location be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow precise location always -->
+  <STATEMENT id="logistic-fleet-a">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fleet-a</cv:optionId>
+      <cv:optionLabel>Allow precise location always</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only during work hours (daytime) + deny Night -->
+  <STATEMENT id="logistic-fleet-b">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fleet-b</cv:optionId>
+      <cv:optionLabel>Allow only during work hours (daytime), deny Night</cv:optionLabel>
+      <cv:context>
+        <cv:timeOfDay allowed="Morning,Afternoon"/>
+        <cv:timeOfDay denied="Night"/>
+      </cv:context>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Generalize to 1km grid -->
+  <STATEMENT id="logistic-fleet-c">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fleet-c</cv:optionId>
+      <cv:optionLabel>Generalize to 1km grid</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize radius="1km" type="grid"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Aggregate end-of-day summary only -->
+  <STATEMENT id="logistic-fleet-d">
+    <PURPOSE><admin/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#trip.dailysummary"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fleet-d</cv:optionId>
+      <cv:optionLabel>Aggregate end-of-day summary only</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="daily" type="summary"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 7.2: Route Optimization                   -->
+  <!-- Question: "For delivery route optimization, what can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow location + speed -->
+  <STATEMENT id="logistic-route-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.latitude"/>
+      <DATA ref="#location.longitude"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-route-a</cv:optionId>
+      <cv:optionLabel>Allow location + speed</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow speed only (no location) -->
+  <STATEMENT id="logistic-route-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-route-b</cv:optionId>
+      <cv:optionLabel>Allow speed only (no location)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.latitude"/>
+        <cv:deny dataRef="#location.longitude"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Share only RoadType + traffic level (no GPS) -->
+  <STATEMENT id="logistic-route-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#location.roadtype"/>
+      <DATA ref="#traffic.level"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-route-c</cv:optionId>
+      <cv:optionLabel>Share only RoadType + traffic level (no GPS)</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#location.latitude"/>
+        <cv:deny dataRef="#location.longitude"/>
+      </cv:processing>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny route optimization -->
+  <STATEMENT id="logistic-route-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>logistic-route-d</cv:optionId>
+      <cv:optionLabel>Deny route optimization</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 7.3: Driver Behavior Compliance           -->
+  <!-- Question: "For compliance (harsh braking), what can be used?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow exact braking/acceleration events -->
+  <STATEMENT id="logistic-compliance-a">
+    <PURPOSE><other-purpose>compliance-monitoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.braking"/>
+      <DATA ref="#behavior.acceleration"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-compliance-a</cv:optionId>
+      <cv:optionLabel>Allow exact braking/acceleration events</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only categories (Normal/Harsh) -->
+  <STATEMENT id="logistic-compliance-b">
+    <PURPOSE><other-purpose>compliance-monitoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.braking.category"/>
+      <DATA ref="#behavior.acceleration.category"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-compliance-b</cv:optionId>
+      <cv:optionLabel>Allow only categories (Normal/Harsh)</cv:optionLabel>
+      <cv:transform>
+        <cv:generalize type="category" buckets="Normal,Harsh"/>
+      </cv:transform>
+      <cv:priority>70</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Aggregate weekly safety score only -->
+  <STATEMENT id="logistic-compliance-c">
+    <PURPOSE><other-purpose>compliance-monitoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#behavior.weeklysafetyscore"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-compliance-c</cv:optionId>
+      <cv:optionLabel>Aggregate weekly safety score only</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="weekly" type="score"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny monitoring -->
+  <STATEMENT id="logistic-compliance-d">
+    <PURPOSE><other-purpose>compliance-monitoring</other-purpose></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>logistic-compliance-d</cv:optionId>
+      <cv:optionLabel>Deny compliance monitoring</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- ================================================= -->
+  <!-- Purpose 7.4: Fuel Efficiency Monitoring           -->
+  <!-- Question: "For fuel efficiency, what can be shared?" -->
+  <!-- ================================================= -->
+
+  <!-- Option a) Allow FuelLevel + RPM + EngineLoad + Speed -->
+  <STATEMENT id="logistic-fuel-a">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#health.rpm"/>
+      <DATA ref="#health.engineload"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fuel-a</cv:optionId>
+      <cv:optionLabel>Allow FuelLevel + RPM + EngineLoad + Speed</cv:optionLabel>
+      <cv:priority>40</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option b) Allow only FuelLevel + Speed -->
+  <STATEMENT id="logistic-fuel-b">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#health.fuellevel"/>
+      <DATA ref="#location.speed"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fuel-b</cv:optionId>
+      <cv:optionLabel>Allow only FuelLevel + Speed</cv:optionLabel>
+      <cv:processing>
+        <cv:deny dataRef="#health.rpm"/>
+        <cv:deny dataRef="#health.engineload"/>
+      </cv:processing>
+      <cv:priority>60</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option c) Aggregate per trip summary only -->
+  <STATEMENT id="logistic-fuel-c">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><stated-purpose/></RETENTION>
+    <DATA-GROUP>
+      <DATA ref="#trip.fuelsummary"/>
+    </DATA-GROUP>
+    <EXTENSION>
+      <cv:optionId>logistic-fuel-c</cv:optionId>
+      <cv:optionLabel>Aggregate per trip summary only</cv:optionLabel>
+      <cv:processing>
+        <cv:aggregate interval="per-trip" type="summary"/>
+      </cv:processing>
+      <cv:priority>80</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+  <!-- Option d) Deny monitoring -->
+  <STATEMENT id="logistic-fuel-d">
+    <PURPOSE><develop/></PURPOSE>
+    <RECIPIENT><ours/></RECIPIENT>
+    <RETENTION><no-retention/></RETENTION>
+    <EXTENSION>
+      <cv:optionId>logistic-fuel-d</cv:optionId>
+      <cv:optionLabel>Deny fuel efficiency monitoring</cv:optionLabel>
+      <cv:processing>
+        <cv:deny>true</cv:deny>
+      </cv:processing>
+      <cv:priority>90</cv:priority>
+    </EXTENSION>
+  </STATEMENT>
+
+</POLICY>
+
+</POLICIES>
