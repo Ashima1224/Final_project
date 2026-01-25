@@ -1,377 +1,510 @@
-// src/components/DomainExpert.js - Admin/Domain Expert Interface
-
 import React, { useState, useEffect } from 'react';
-import { getQuestionnaire, getP3PPolicies, getPETHierarchy } from '../api';
+import { Upload, CheckCircle, XCircle, FileText, AlertCircle, BookOpen } from 'lucide-react';
 
-export default function DomainExpert({ user, onLogout }) {
-  const [services, setServices] = useState({});
-  const [p3pPolicies, setP3pPolicies] = useState({});
-  const [petHierarchy, setPetHierarchy] = useState(null);
-  const [selectedService, setSelectedService] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
+const DomainExpertUpload = ({ user, onLogout }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [currentConfig, setCurrentConfig] = useState(null);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
-    loadData();
+    fetchCurrentConfig();
   }, []);
 
-  const loadData = async () => {
+  const fetchCurrentConfig = async () => {
     try {
-      const [questionnaire, policies, pets] = await Promise.all([
-        getQuestionnaire(),
-        getP3PPolicies(),
-        getPETHierarchy()
-      ]);
-      setServices(questionnaire);
-      setP3pPolicies(policies);
-      setPetHierarchy(pets);
+      const response = await fetch('http://localhost:4000/api/domain/config');
+      if (response.ok) {
+        const config = await response.json();
+        setCurrentConfig(config);
+      }
     } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch config:', error);
     }
   };
 
-  const renderOverview = () => (
-    <div>
-      <div className="content-header">
-        <h2>
-          <span>🔧</span>
-          System Overview
-        </h2>
-        <p>Privacy Preference Management System Configuration</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="results-panel" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', fontWeight: '700', color: '#cba6f7' }}>
-            {Object.keys(services).length}
-          </div>
-          <div style={{ color: '#6c7086' }}>Service Types</div>
-        </div>
-        <div className="results-panel" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', fontWeight: '700', color: '#89b4fa' }}>
-            {Object.values(services).reduce((acc, s) => acc + (s.questions?.length || 0), 0)}
-          </div>
-          <div style={{ color: '#6c7086' }}>Total Questions</div>
-        </div>
-        <div className="results-panel" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', fontWeight: '700', color: '#a6e3a1' }}>
-            {Object.keys(p3pPolicies).length}
-          </div>
-          <div style={{ color: '#6c7086' }}>P3P Policy Sets</div>
-        </div>
-        <div className="results-panel" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', fontWeight: '700', color: '#f9e2af' }}>
-            {petHierarchy?.hierarchy?.length || 9}
-          </div>
-          <div style={{ color: '#6c7086' }}>PET Types</div>
-        </div>
-      </div>
-
-      {/* Service Types Grid */}
-      <div className="results-panel">
-        <h3 style={{ marginBottom: '16px' }}>📋 Service Types</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {Object.entries(services).map(([key, service]) => (
-            <div 
-              key={key}
-              style={{
-                padding: '16px',
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                border: '2px solid transparent',
-                transition: 'all 0.2s ease'
-              }}
-              onClick={() => {
-                setSelectedService(key);
-                setActiveTab('questions');
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#cba6f7'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '24px' }}>{service.icon}</span>
-                <div>
-                  <div style={{ fontWeight: '600' }}>{service.name}</div>
-                  <div style={{ fontSize: '12px', color: '#6c7086' }}>{key}</div>
-                </div>
-              </div>
-              <div style={{ fontSize: '13px', color: '#6c7086' }}>
-                {service.questions?.length || 0} questions • Click to view
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* PET Hierarchy */}
-      {petHierarchy && (
-        <div className="results-panel" style={{ marginTop: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>🔒 Privacy-Enhancing Techniques (PET) Hierarchy</h3>
-          <p style={{ fontSize: '13px', color: '#6c7086', marginBottom: '16px' }}>
-            Used for conflict resolution when multiple rules apply. Higher = stronger protection.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {(petHierarchy.hierarchy || []).map((pet, idx) => (
-              <div 
-                key={pet}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  background: idx === 0 ? '#fef2f2' : idx === petHierarchy.hierarchy.length - 1 ? '#f0fdf4' : '#f8f9fa',
-                  borderRadius: '8px'
-                }}
-              >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  background: '#1e1e2e',
-                  color: 'white',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: '700',
-                  fontSize: '14px'
-                }}>
-                  {idx + 1}
-                </div>
-                <div>
-                  <span className={`pet-badge ${pet.toLowerCase()}`}>{pet}</span>
-                  <span style={{ marginLeft: '12px', fontSize: '13px', color: '#6c7086' }}>
-                    {petHierarchy.descriptions?.[pet] || ''}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderQuestions = () => {
-    const service = services[selectedService];
-    if (!service) {
-      return (
-        <div className="results-panel" style={{ textAlign: 'center', padding: '40px' }}>
-          <p style={{ color: '#6c7086' }}>Select a service type to view questions</p>
-        </div>
-      );
+  const validateConfigFile = (config) => {
+    const errors = [];
+    if (!config.domain) errors.push('Missing required field: domain');
+    if (!config.dataTypes || !Array.isArray(config.dataTypes)) {
+      errors.push('Missing or invalid field: dataTypes (must be array)');
     }
-
-    return (
-      <div>
-        <div className="content-header">
-          <h2>
-            <span>{service.icon}</span>
-            {service.name} - Questions
-          </h2>
-          <p>{service.description}</p>
-        </div>
-
-        {service.questions?.map((question, idx) => (
-          <div key={question.id} className="question-card" style={{ marginBottom: '16px' }}>
-            <div className="purpose">{idx + 1}. {question.purpose}</div>
-            <div className="question-text" style={{ marginBottom: '16px' }}>{question.questionText}</div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {Object.entries(question.options || {}).map(([key, option]) => (
-                <div 
-                  key={key}
-                  style={{
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px',
-                    borderLeft: `4px solid ${getEffectColor(option.effect)}`
-                  }}
-                >
-                  <div style={{ fontWeight: '600', marginBottom: '8px' }}>
-                    ({key.toUpperCase()}) {option.label}
-                  </div>
-                  <div style={{ fontSize: '13px' }}>
-                    <span className={`pet-badge ${option.effect?.toLowerCase()}`}>{option.effect}</span>
-                    <span style={{ marginLeft: '8px', color: '#6c7086' }}>
-                      Priority: {option.priority}
-                    </span>
-                  </div>
-                  {option.contexts?.length > 0 && (
-                    <div style={{ fontSize: '12px', color: '#6c7086', marginTop: '8px' }}>
-                      <strong>Contexts:</strong> {option.contexts.map(c => c.type).join(', ')}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: '12px', fontSize: '12px', color: '#6c7086' }}>
-              <strong>Data types affected:</strong> {question.dataTypes?.join(', ')}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    if (!config.contexts || !Array.isArray(config.contexts)) {
+      errors.push('Missing or invalid field: contexts (must be array)');
+    }
+    if (!config.services || !Array.isArray(config.services)) {
+      errors.push('Missing or invalid field: services (must be array)');
+    }
+    if (config.services) {
+      config.services.forEach((service, idx) => {
+        if (!service.id) errors.push(`Service ${idx + 1}: Missing 'id'`);
+        if (!service.name) errors.push(`Service ${idx + 1}: Missing 'name'`);
+        if (!service.dataTypes || !Array.isArray(service.dataTypes)) {
+          errors.push(`Service ${idx + 1}: Missing or invalid 'dataTypes'`);
+        }
+      });
+    }
+    return errors;
   };
 
-  const renderPolicies = () => (
-    <div>
-      <div className="content-header">
-        <h2>
-          <span>📄</span>
-          P3P Policies
-        </h2>
-        <p>Platform for Privacy Preferences policies by service type</p>
-      </div>
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    if (!file.name.endsWith('.json')) {
+      setValidationErrors(['Only JSON files are accepted']);
+      setSelectedFile(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const config = JSON.parse(e.target.result);
+        const errors = validateConfigFile(config);
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+          setSelectedFile(null);
+        } else {
+          setValidationErrors([]);
+          setSelectedFile({ file, config });
+        }
+      } catch (error) {
+        setValidationErrors(['Invalid JSON format: ' + error.message]);
+        setSelectedFile(null);
+      }
+    };
+    reader.readAsText(file);
+  };
 
-      {Object.entries(p3pPolicies).map(([serviceType, policies]) => (
-        <div key={serviceType} className="results-panel" style={{ marginBottom: '16px' }}>
-          <h3 style={{ 
-            marginBottom: '16px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px' 
-          }}>
-            {services[serviceType]?.icon} {services[serviceType]?.name || serviceType}
-          </h3>
-          
-          {Array.isArray(policies) && policies.map((policy, idx) => (
-            <div 
-              key={idx}
-              style={{
-                padding: '12px',
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                marginBottom: '8px'
-              }}
-            >
-              <div style={{ fontWeight: '600' }}>{policy.purpose}</div>
-              <div style={{ fontSize: '13px', color: '#6c7086', marginTop: '4px' }}>
-                <strong>Data types:</strong> {policy.dataTypes?.join(', ')}
-              </div>
-              {policy.retention && (
-                <div style={{ fontSize: '12px', color: '#6c7086', marginTop: '4px' }}>
-                  <strong>Retention:</strong> {policy.retention}
-                </div>
-              )}
-              {policy.recipients && (
-                <div style={{ fontSize: '12px', color: '#6c7086', marginTop: '4px' }}>
-                  <strong>Recipients:</strong> {policy.recipients?.join(', ')}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files[0]);
+  };
 
-  if (loading) {
-    return (
-      <div className="app-container">
-        <div className="sidebar">
-          <div className="sidebar-header">
-            <h1>🔧 Domain Expert</h1>
-          </div>
-        </div>
-        <div className="main-content">
-          <div className="loading">
-            <div className="spinner"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    setUploadStatus('uploading');
+    try {
+      const response = await fetch('http://localhost:4000/api/domain/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedFile.config)
+      });
+      if (response.ok) {
+        setUploadStatus('success');
+        setCurrentConfig(selectedFile.config);
+        setSelectedFile(null);
+        setTimeout(() => setUploadStatus(null), 5000);
+      } else {
+        setUploadStatus('error');
+        setValidationErrors(['Upload failed: ' + (await response.text())]);
+      }
+    } catch (error) {
+      setUploadStatus('error');
+      setValidationErrors(['Upload failed: ' + error.message]);
+    }
+  };
 
   return (
-    <div className="app-container">
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fa' }}>
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <h1>
-            <span>🔧</span>
-            Domain Expert
+      <div style={{
+        width: '280px',
+        background: 'linear-gradient(180deg, #2c3e50 0%, #34495e 100%)',
+        color: 'white',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700' }}>
+            🔧 Domain Expert
           </h1>
-          <p>System Administration</p>
+          <p style={{ margin: '8px 0 0 0', fontSize: '13px', opacity: 0.8 }}>
+            System Administration
+          </p>
         </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-section-title">Navigation</div>
-          
-          <div
-            className={`service-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <span className="icon">📊</span>
-            <span className="name">Overview</span>
+        <nav style={{ flex: 1 }}>
+          <div style={{ fontSize: '11px', fontWeight: '600', opacity: 0.6, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Navigation
           </div>
-          
-          <div
-            className={`service-item ${activeTab === 'questions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('questions')}
-          >
-            <span className="icon">❓</span>
-            <span className="name">Questions</span>
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            marginBottom: '8px',
+            fontWeight: '500',
+            fontSize: '14px'
+          }}>
+            📤 Upload Configuration
           </div>
-          
-          <div
-            className={`service-item ${activeTab === 'policies' ? 'active' : ''}`}
-            onClick={() => setActiveTab('policies')}
-          >
-            <span className="icon">📄</span>
-            <span className="name">P3P Policies</span>
-          </div>
-        </div>
+        </nav>
 
-        {activeTab === 'questions' && (
-          <div className="sidebar-section">
-            <div className="sidebar-section-title">Service Types</div>
-            {Object.entries(services).map(([key, service]) => (
-              <div
-                key={key}
-                className={`service-item ${selectedService === key ? 'active' : ''}`}
-                onClick={() => setSelectedService(key)}
-              >
-                <span className="icon">{service.icon}</span>
-                <span className="name">{service.name}</span>
-                <span className="badge">{service.questions?.length || 0}</span>
-              </div>
-            ))}
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          paddingTop: '16px'
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+            {user.username}
           </div>
-        )}
-
-        <div className="user-info">
-          <div className="username">{user.username}</div>
-          <div className="role">Administrator</div>
-          <button onClick={onLogout}>Sign Out</button>
+          <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>
+            Administrator
+          </div>
+          <button
+            onClick={onLogout}
+            style={{
+              width: '100%',
+              padding: '10px',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            Sign Out
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'questions' && renderQuestions()}
-        {activeTab === 'policies' && renderPolicies()}
+      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          {/* Header */}
+          <div style={{ marginBottom: '32px' }}>
+            <h2 style={{ margin: 0, fontSize: '32px', fontWeight: '700', color: '#2c3e50' }}>
+              Domain Configuration Upload
+            </h2>
+            <p style={{ margin: '8px 0 0 0', color: '#6c757d', fontSize: '16px' }}>
+              Upload a JSON configuration file to define data types, contexts, and services for the privacy preference system
+            </p>
+          </div>
+
+          {/* Instructions Button */}
+          <div style={{ marginBottom: '24px' }}>
+            <button
+              onClick={() => setShowInstructions(!showInstructions)}
+              style={{
+                padding: '12px 24px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <BookOpen size={20} />
+              {showInstructions ? 'Hide' : 'Show'} JSON File Structure Guide
+            </button>
+          </div>
+
+          {/* Instructions Panel */}
+          {showInstructions && (
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '32px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              marginBottom: '32px',
+              border: '2px solid #667eea'
+            }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600', color: '#667eea' }}>
+                📘 JSON Configuration File Structure
+              </h3>
+              
+              <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#4a5568' }}>
+                <p style={{ marginBottom: '16px' }}>
+                  Your JSON file should contain the following top-level fields:
+                </p>
+
+                <div style={{ background: '#f7fafc', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                  <code style={{ fontSize: '13px', fontFamily: 'monospace' }}>
+                    {`{
+  "domain": "Your Domain Name",
+  "description": "Description of your privacy model",
+  "dataTypes": [...],
+  "contexts": [...],
+  "privacyActions": [...],
+  "services": [...]
+}`}
+                  </code>
+                </div>
+
+                <h4 style={{ marginTop: '24px', marginBottom: '12px', color: '#2d3748' }}>Required Fields:</h4>
+                <ul style={{ marginLeft: '20px' }}>
+                  <li><strong>domain</strong> (string): Name of your domain (e.g., "Automotive")</li>
+                  <li><strong>dataTypes</strong> (array): List of data types like ["location.latitude", "speed.current", ...]</li>
+                  <li><strong>contexts</strong> (array): Situational contexts with id, name, description, type</li>
+                  <li><strong>services</strong> (array): Service definitions with their data requirements</li>
+                </ul>
+
+                <h4 style={{ marginTop: '24px', marginBottom: '12px', color: '#2d3748' }}>Service Object Structure:</h4>
+                <div style={{ background: '#f7fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                  <code style={{ fontSize: '13px', fontFamily: 'monospace' }}>
+                    {`{
+  "id": "naviapp",
+  "name": "Navigation App",
+  "icon": "🗺️",
+  "description": "Turn-by-turn navigation",
+  "dataTypes": [
+    {
+      "type": "location.precise",
+      "purpose": "Navigation",
+      "required": true,
+      "retention": "stated-purpose"
+    }
+  ]
+}`}
+                  </code>
+                </div>
+
+                <h4 style={{ marginTop: '24px', marginBottom: '12px', color: '#2d3748' }}>Example Based On:</h4>
+                <p>
+                  See the <code style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>domain-config-maps.json</code> file 
+                  for a complete working example with Apple Maps, Google Maps, and OpenStreetMap configurations.
+                </p>
+
+                <div style={{ marginTop: '20px', padding: '16px', background: '#edf2f7', borderRadius: '8px', borderLeft: '4px solid #4299e1' }}>
+                  <strong>💡 Tip:</strong> Start by copying the example file and modify it for your specific use case. 
+                  The system will validate your JSON structure before accepting the upload.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Status */}
+          {uploadStatus === 'success' && (
+            <div style={{
+              padding: '16px 20px',
+              background: '#d4edda',
+              border: '1px solid #c3e6cb',
+              borderRadius: '8px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <CheckCircle size={24} color="#155724" />
+              <div>
+                <div style={{ fontWeight: '600', color: '#155724' }}>
+                  Configuration Uploaded Successfully!
+                </div>
+                <div style={{ fontSize: '14px', color: '#155724', marginTop: '4px' }}>
+                  User dashboards will now use the new configuration with dynamic dropdowns.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {uploadStatus === 'error' && (
+            <div style={{
+              padding: '16px 20px',
+              background: '#f8d7da',
+              border: '1px solid #f5c6cb',
+              borderRadius: '8px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <XCircle size={24} color="#721c24" />
+              <div style={{ color: '#721c24', fontWeight: '600' }}>
+                Upload Failed
+              </div>
+            </div>
+          )}
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div style={{
+              padding: '16px 20px',
+              background: '#fff3cd',
+              border: '1px solid #ffeaa7',
+              borderRadius: '8px',
+              marginBottom: '24px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <AlertCircle size={24} color="#856404" />
+                <div style={{ fontWeight: '600', color: '#856404' }}>
+                  Validation Errors:
+                </div>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '36px', color: '#856404' }}>
+                {validationErrors.map((error, idx) => (
+                  <li key={idx} style={{ marginBottom: '4px' }}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Upload Area */}
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '32px'
+          }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
+              Upload Configuration File
+            </h3>
+
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              style={{
+                border: `2px dashed ${isDragging ? '#667eea' : validationErrors.length > 0 ? '#dc3545' : '#dee2e6'}`,
+                borderRadius: '12px',
+                padding: '48px',
+                textAlign: 'center',
+                background: isDragging ? '#f0f4ff' : '#fafbfc',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <Upload size={48} color={isDragging ? '#667eea' : '#6c757d'} style={{ margin: '0 auto 16px' }} />
+              
+              <div style={{ fontSize: '18px', fontWeight: '600', color: '#2c3e50', marginBottom: '8px' }}>
+                {selectedFile ? selectedFile.file.name : 'Drop your JSON file here'}
+              </div>
+              
+              <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '20px' }}>
+                or click to browse
+              </div>
+
+              <input
+                type="file"
+                accept=".json"
+                onChange={(e) => handleFileSelect(e.target.files[0])}
+                style={{ display: 'none' }}
+                id="file-upload"
+              />
+              
+              <label
+                htmlFor="file-upload"
+                style={{
+                  display: 'inline-block',
+                  padding: '12px 32px',
+                  background: '#667eea',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  border: 'none'
+                }}
+              >
+                Select File
+              </label>
+            </div>
+
+            {selectedFile && (
+              <div style={{ marginTop: '24px' }}>
+                <div style={{
+                  padding: '16px',
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <FileText size={20} color="#28a745" />
+                    <div style={{ fontWeight: '600', color: '#28a745' }}>
+                      File validated successfully
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6c757d' }}>
+                    <div><strong>Domain:</strong> {selectedFile.config.domain}</div>
+                    <div><strong>Data Types:</strong> {selectedFile.config.dataTypes?.length || 0}</div>
+                    <div><strong>Contexts:</strong> {selectedFile.config.contexts?.length || 0}</div>
+                    <div><strong>Services:</strong> {selectedFile.config.services?.length || 0}</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleUpload}
+                  disabled={uploadStatus === 'uploading'}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    background: uploadStatus === 'uploading' ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: uploadStatus === 'uploading' ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload Configuration'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Current Configuration */}
+          {currentConfig && (
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '32px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
+                Current Configuration
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Domain</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.domain}</div>
+                </div>
+                <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Data Types</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.dataTypes?.length || 0}</div>
+                </div>
+                <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Contexts</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.contexts?.length || 0}</div>
+                </div>
+                <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Services</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.services?.length || 0}</div>
+                </div>
+              </div>
+
+              <details style={{ cursor: 'pointer' }}>
+                <summary style={{ fontWeight: '600', padding: '12px', background: '#f8f9fa', borderRadius: '8px' }}>
+                  View Full Configuration
+                </summary>
+                <pre style={{
+                  marginTop: '16px',
+                  padding: '16px',
+                  background: '#2c3e50',
+                  color: '#a6e3a1',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  overflow: 'auto',
+                  maxHeight: '400px'
+                }}>
+                  {JSON.stringify(currentConfig, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
 
-function getEffectColor(effect) {
-  const colors = {
-    'ALLOW': '#a6e3a1',
-    'BLOCK': '#f38ba8',
-    'ANONYMIZE': '#94e2d5',
-    'AGGREGATE': '#f9e2af',
-    'GENERALIZE': '#fab387',
-    'REDUCE_PRECISION': '#cba6f7',
-    'LOCAL_ONLY': '#89b4fa',
-    'DELAY': '#a6adc8',
-    'MASK': '#f5c2e7'
-  };
-  return colors[effect] || '#cdd6f4';
-}
+export default DomainExpertUpload;

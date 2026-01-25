@@ -1,5 +1,4 @@
 // src/api.js - API Helper Functions
-
 const API_BASE = 'http://localhost:4000/api';
 
 // Auth
@@ -111,6 +110,15 @@ export async function resolveConflict(rules, userChoice = null) {
   return res.json();
 }
 
+// Get domain metadata for dynamic dropdowns
+export async function getDomainMetadata() {
+  const res = await fetch(`${API_BASE}/domain/metadata`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch domain metadata');
+  }
+  return res.json();
+}
+
 // P3P Policies
 export async function getP3PPolicies() {
   const res = await fetch(`${API_BASE}/p3p`);
@@ -136,4 +144,70 @@ export async function getStreamData(userId, serviceType, currentContext = {}) {
     body: JSON.stringify({ userId, serviceType, currentContext })
   });
   return res.json();
+}
+
+// ================================================================================
+// P3P COMPARISON FUNCTIONS
+// ================================================================================
+
+/**
+ * Compare XPref rule against P3P policies
+ */
+export async function compareWithP3P(xprefRule) {
+  try {
+    const response = await fetch(`${API_BASE}/comparison/p3p`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ xprefRule })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to compare with P3P');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('P3P comparison error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Extract fields from XPref and P3P (for debugging)
+ */
+export async function extractComparisonFields(xprefRule) {
+  try {
+    const response = await fetch(`${API_BASE}/comparison/extract-fields`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ xprefRule })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to extract fields');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Field extraction error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Test if P3P policies are loaded correctly
+ */
+export async function testP3PLoading() {
+  try {
+    const response = await fetch(`${API_BASE}/p3p/test`);
+    return await response.json();
+  } catch (error) {
+    console.error('P3P test error:', error);
+    throw error;
+  }
 }

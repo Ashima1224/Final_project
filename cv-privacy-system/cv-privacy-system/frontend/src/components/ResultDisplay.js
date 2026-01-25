@@ -1,14 +1,65 @@
 // src/components/ResultDisplay.js - Two-Phase Evaluation Results Display
 
 import React, { useState } from 'react';
+import P3PComparisonTable from './P3PComparisonTable';
 
-export default function ResultDisplay({ result, serviceType, serviceData }) {
+export default function ResultDisplay({ result, serviceType, serviceData, onOpenLiveStream }) {
+  // 🔍 ADD THESE LINES HERE
+  console.log('🔍 Full result object:', result);
+  console.log('📊 Comparison table exists?', !!result?.comparisonTable);
+  console.log('📊 Comparison table data:', result?.comparisonTable);
+  
   const [expandedPhase, setExpandedPhase] = useState(null);
   const [showRawData, setShowRawData] = useState(false);
 
   if (!result) {
     return (
-      <div className="results-panel">
+      //<div className="results-panel">
+          <div className="result-display">
+      {/* Add Live Stream Button at the top */}
+      <div style={{
+        marginBottom: '24px',
+        padding: '16px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        color: 'white'
+      }}>
+        <div>
+          <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
+            📡 View Live Data Stream
+          </div>
+          <div style={{ fontSize: '13px', opacity: 0.9 }}>
+            See real-time vehicle data with your privacy preferences applied
+          </div>
+        </div>
+        <button
+          onClick={onOpenLiveStream}
+          style={{
+            padding: '12px 24px',
+            background: 'white',
+            color: '#667eea',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontSize: '14px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Open Dashboard →
+        </button>
+      </div>
+  <div className="results-panel"></div>
         <p style={{ color: '#6c7086', textAlign: 'center', padding: '40px' }}>
           No evaluation results yet. Configure preferences and click "Evaluate Now".
         </p>
@@ -386,6 +437,118 @@ export default function ResultDisplay({ result, serviceType, serviceData }) {
           </tbody>
         </table>
       </div>
+
+      {/* P3P COMPARISON TABLE - ADD THIS ENTIRE SECTION */}
+        {result.comparisonTable && (
+  <div className="results-panel" style={{ marginTop: '20px' }}>
+    <h3 style={{ marginBottom: '16px' }}>🗺️ Service Provider Comparison</h3>
+    <p style={{ fontSize: '13px', color: '#6c7086', marginBottom: '16px' }}>
+      Your preferences compared against Google Maps, Apple Maps, and OpenStreetMap policies:
+    </p>
+    
+    {/* Display Comparison Table */}
+    <div style={{ overflowX: 'auto' }}>
+      <table className="data-table" style={{ width: '100%', marginBottom: '20px' }}>
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Your Preference</th>
+            <th>Google Maps</th>
+            <th>Apple Maps</th>
+            <th>OpenStreetMap</th>
+          </tr>
+        </thead>
+        <tbody>
+          {result.comparisonTable.rows.map((row, idx) => (
+            <tr key={idx}>
+              <td style={{ fontWeight: '600' }}>{row.attribute}</td>
+              <td style={{ fontFamily: 'monospace' }}>{row.userPreference}</td>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>{row.google.icon}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{row.google.value}</span>
+                </div>
+              </td>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>{row.apple.icon}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{row.apple.value}</span>
+                </div>
+              </td>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>{row.osm.icon}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{row.osm.value}</span>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    
+    {/* Display Scores */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginTop: '20px' }}>
+      <div style={{ 
+        padding: '16px', 
+        background: '#f0f9ff', 
+        borderRadius: '8px',
+        border: '2px solid #3b82f6'
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: '700', color: '#1e40af' }}>
+          {result.comparisonTable.scores.google.percentage}%
+        </div>
+        <div style={{ fontSize: '14px', color: '#6c7086', marginTop: '4px' }}>
+          Google Maps Match
+        </div>
+      </div>
+      
+      <div style={{ 
+        padding: '16px', 
+        background: '#faf5ff', 
+        borderRadius: '8px',
+        border: '2px solid #a855f7'
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: '700', color: '#7c3aed' }}>
+          {result.comparisonTable.scores.apple.percentage}%
+        </div>
+        <div style={{ fontSize: '14px', color: '#6c7086', marginTop: '4px' }}>
+          Apple Maps Match
+        </div>
+      </div>
+      
+      <div style={{ 
+        padding: '16px', 
+        background: '#f0fdf4', 
+        borderRadius: '8px',
+        border: '2px solid #22c55e'
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: '700', color: '#15803d' }}>
+          {result.comparisonTable.scores.osm.percentage}%
+        </div>
+        <div style={{ fontSize: '14px', color: '#6c7086', marginTop: '4px' }}>
+          OpenStreetMap Match
+        </div>
+      </div>
+    </div>
+    
+    {/* Display Recommendation */}
+    <div style={{
+      marginTop: '20px',
+      padding: '16px',
+      background: '#d4edda',
+      border: '2px solid #a6e3a1',
+      borderRadius: '8px'
+    }}>
+      <div style={{ fontWeight: '600', marginBottom: '8px' }}>
+        ✅ Recommended Service: {result.comparisonTable.recommendation.service}
+      </div>
+      <div style={{ fontSize: '14px', color: '#155724' }}>
+        {result.comparisonTable.recommendation.reason}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Explanation Panel */}
       <div className="results-panel" style={{ marginTop: '20px' }}>

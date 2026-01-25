@@ -8,7 +8,16 @@ const { v4: uuidv4 } = require('uuid');
 
 const { QUESTIONNAIRE_DATA, PET_HIERARCHY, CONTEXT_TYPES } = require('./questionnaire');
 const { generateXPrefRule, generateServiceRuleset } = require('./ruleGenerator');
-const { P3P_POLICIES, findMatchingPolicy, matchPolicyToPreference, getAllPolicies } = require('./policyMatcher');
+const { 
+  matchXPrefAgainstServices, 
+  generateComparisonTable,
+  extractAllXPrefFields,
+  extractAllP3PFields,
+  loadAllP3PPolicies,
+  findMatchingPolicy,
+  matchPolicyToPreference,
+  P3P_POLICIES
+} = require('./policyMatcher');
 const { evaluatePreferences, streamEvaluation, policyEvaluation, resolveConflicts } = require('./ruleEngine');
 
 const app = express();
@@ -24,7 +33,8 @@ const storage = {
   ],
   userPreferences: new Map(), // userId -> { serviceType -> { questionId -> selectedOption } }
   savedRules: new Map(), // userId -> [ rules ]
-  evaluationHistory: [] // Store evaluation results
+   domainConfig: null, // ADD THIS LINE
+  evaluationHistory: [] // ← ADD THIS LINE
 };
 
 // ================================================================================
@@ -111,6 +121,144 @@ app.post('/api/preferences', (req, res) => {
     return res.status(400).json({ error: `Unknown service type: ${serviceType}` });
   }
   
+//========== ADD THIS ENTIRE BLOCK HERE ==========
+  
+// Special handling for MAP service with domain config
+  if (serviceType === 'map' && storage.domainConfig) {
+    if (answers['map-data-type']) {
+      console.log('✓ Using dynamic MAP preferences');
+      
+      // Handle multiple data types (comma-separated)
+      const dataTypes = answers['map-data-type'].includes(',') 
+        ? answers['map-data-type'].split(',').map(s => s.trim())
+        : [answers['map-data-type']];
+      
+      const dynamicPrefs = {
+        dataTypes: dataTypes,
+        privacyLevel: answers['map-privacy'],
+        retention: answers['map-retention']
+      };
+      
+      // Map privacy level to PET effect
+      const effectMap = {
+        'high': 'ANONYMIZE',
+        'medium': 'GENERALIZE',
+        'low': 'ALLOW'
+      };
+      const effect = effectMap[dynamicPrefs.privacyLevel] || 'GENERALIZE';
+      
+      // Map effect to XPref behavior
+      const behaviorMap = {
+        'ALLOW': 'request',
+        'BLOCK': 'block',
+        'ANONYMIZE': 'limited',
+        'GENERALIZE': 'limited',
+        'DELAY': 'limited'
+      };
+      const behavior = behaviorMap[effect] || 'limited';
+      
+      // Build XPath condition
+      const dataTypeConditions = dynamicPrefs.dataTypes
+        .map(dt => `name(.)='${dt}'`)
+        .join(' or ');
+      const xpathCondition = `/POLICY/STATEMENT/DATA-GROUP/DATA[${dataTypeConditions}]`;
+      
+      // Create XPref-compliant rule
+      const rule = {
+        id: `map-dynamic-${Date.now()}`,
+        serviceType: 'map',
+        purpose: 'Navigation',
+        dataTypes: dynamicPrefs.dataTypes,
+        effect: effect,
+        behavior: behavior,
+        retention: dynamicPrefs.retention,
+        priority: dynamicPrefs.privacyLevel === 'high' ? 90 : dynamicPrefs.privacyLevel === 'medium' ? 60 : 40,
+        label: `MAP service with ${dynamicPrefs.privacyLevel} privacy (${dynamicPrefs.dataTypes.length} data type${dynamicPrefs.dataTypes.length > 1 ? 's' : ''})`,
+        xpathCondition: xpathCondition,
+        contexts: [],
+        createdAt: new Date().toISOString()
+      };
+      
+      // Generate XPref XML
+      const dataTypesXml = dynamicPrefs.dataTypes
+        .map(dt => `      <DATA-TYPE>${dt}</DATA-TYPE>`)
+        .join('\n');
+      
+      const rulesetXml = `<?xml version="1.0" encoding="UTF-8"?>
+<RULESET xmlns="http://www.w3.org/2002/01/P3Pv1" 
+         service-type="${serviceType}"
+         service-name="Map / Navigation"
+         version="1.0"
+         created="${new Date().toISOString()}">
+  
+  <DESCRIPTION>
+    XPref privacy preferences for Map Service
+    Generated from dynamic preference builder
+  </DESCRIPTION>
+  
+  <RULE id="${rule.id}" 
+        behavior="${behavior}"
+        condition="${xpathCondition}"
+        description="${rule.label}">
+    <META>
+      <PRIORITY>${rule.priority}</PRIORITY>
+      <EFFECT>${effect}</EFFECT>
+      <PURPOSE>${rule.purpose}</PURPOSE>
+      <SERVICE-TYPE>${serviceType}</SERVICE-TYPE>
+      <CREATED>${rule.createdAt}</CREATED>
+    </META>
+    <DATA-TYPES>
+${dataTypesXml}
+    </DATA-TYPES>
+    <RETENTION>${dynamicPrefs.retention}</RETENTION>
+    <PRIVACY-LEVEL>${dynamicPrefs.privacyLevel}</PRIVACY-LEVEL>
+  </RULE>
+
+</RULESET>`;
+      
+      const mapRuleset = {
+        rules: [rule],
+        rulesetXml,
+        serviceType: 'map',
+        totalRules: 1,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Store preferences
+      if (!storage.userPreferences.has(userId)) {
+        storage.userPreferences.set(userId, {});
+      }
+      storage.userPreferences.get(userId)[serviceType] = {
+        dynamicPrefs,
+        userContexts: userContexts || [],
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Store rules
+      if (!storage.savedRules.has(userId)) {
+        storage.savedRules.set(userId, []);
+      }
+      const existingRules = storage.savedRules.get(userId);
+      const filteredRules = existingRules.filter(r => r.serviceType !== serviceType);
+      filteredRules.push(...mapRuleset.rules);
+      storage.savedRules.set(userId, filteredRules);
+      
+      console.log('✓ XPref rule generated successfully');
+      console.log(`  Rule ID: ${rule.id}`);
+      console.log(`  Effect: ${effect}`);
+      console.log(`  Data Types: ${dynamicPrefs.dataTypes.join(', ')}`);
+      
+      return res.json({
+        success: true,
+        serviceType,
+        rulesGenerated: mapRuleset.rules.length,
+        ruleset: mapRuleset,
+        message: `Dynamic preferences saved and ${mapRuleset.rules.length} XPref rule generated`
+      });
+    }
+  }
+  
+
   // Validate answers
   const service = QUESTIONNAIRE_DATA[serviceType];
   for (const [questionId, option] of Object.entries(answers)) {
@@ -227,7 +375,7 @@ app.get('/api/rules/:userId', (req, res) => {
 // ================================================================================
 
 // Full two-phase evaluation
-app.post('/api/evaluate', (req, res) => {
+app.post('/api/evaluate', async (req, res) => {
   const { userId, serviceType, currentContext } = req.body;
   
   // Get user's rules
@@ -246,9 +394,9 @@ app.post('/api/evaluate', (req, res) => {
       ]
     });
   }
-  
+   
   // Run evaluation
-  const result = evaluatePreferences(serviceRules, serviceType, currentContext || {});
+ const result = await evaluatePreferences(serviceRules, serviceType, currentContext || {});
   
   // Store in history
   storage.evaluationHistory.push({
@@ -551,6 +699,95 @@ app.post('/api/stream', (req, res) => {
 });
 
 // ================================================================================
+// DOMAIN EXPERT ENDPOINTS
+// ================================================================================
+
+// Upload domain configuration
+app.post('/api/domain/upload', (req, res) => {
+  const config = req.body;
+  
+  // Validate required fields
+  if (!config.domain) {
+    return res.status(400).json({ error: 'Missing required field: domain' });
+  }
+  if (!Array.isArray(config.dataTypes)) {
+    return res.status(400).json({ error: 'dataTypes must be an array' });
+  }
+  if (!Array.isArray(config.contexts)) {
+    return res.status(400).json({ error: 'contexts must be an array' });
+  }
+  if (!Array.isArray(config.services)) {
+    return res.status(400).json({ error: 'services must be an array' });
+  }
+  
+  // Store configuration
+  storage.domainConfig = {
+    ...config,
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: 'admin'
+  };
+  
+  console.log(`\n✓ Domain configuration uploaded successfully`);
+  console.log(`  Domain: ${config.domain}`);
+  console.log(`  Data Types: ${config.dataTypes.length}`);
+  console.log(`  Contexts: ${config.contexts.length}`);
+  console.log(`  Services: ${config.services.length}`);
+  
+  res.json({
+    success: true,
+    message: 'Configuration uploaded successfully',
+    config: storage.domainConfig
+  });
+});
+
+// Get current domain configuration
+app.get('/api/domain/config', (req, res) => {
+  if (!storage.domainConfig) {
+    return res.status(404).json({ 
+      error: 'No domain configuration found',
+      message: 'Please upload a configuration file first'
+    });
+  }
+  
+  res.json(storage.domainConfig);
+});
+
+// Get domain metadata for dynamic UI (data types, retention options, etc.)
+app.get('/api/domain/metadata', (req, res) => {
+  if (!storage.domainConfig) {
+    return res.status(404).json({ 
+      error: 'No domain configuration found',
+      message: 'Domain expert must upload configuration first'
+    });
+  }
+  
+// Extract metadata for UI dropdowns
+const metadata = {
+  dataTypes: storage.domainConfig.dataTypes || [],
+  retentionOptions: storage.domainConfig.retentionPeriods
+    ? storage.domainConfig.retentionPeriods.map(period => ({
+        id: period.id,
+        name: period.name,
+        description: period.description
+      }))
+    : storage.domainConfig.privacyActions
+    ? storage.domainConfig.privacyActions.map(action => ({
+        id: action.id,
+        name: action.name,
+        description: action.description
+      }))
+    : [],
+  privacyLevels: [
+    { id: 'high', name: 'Maximum Privacy' },
+    { id: 'medium', name: 'Balanced Privacy & Features' },
+    { id: 'low', name: 'Maximum Features' }
+  ]
+};
+  
+  res.json(metadata);
+});
+
+// ================================================================================
 // DEBUG/ADMIN ENDPOINTS
 // ================================================================================
 
@@ -561,6 +798,143 @@ app.get('/api/debug/storage', (req, res) => {
     rulesCount: Array.from(storage.savedRules.values()).flat().length,
     historyCount: storage.evaluationHistory.length
   });
+});
+
+// ================================================================================
+// P3P COMPARISON ENDPOINTS
+// ================================================================================
+
+// Compare XPref rule against all P3P policies (dynamic comparison)
+app.post('/api/comparison/p3p', async (req, res) => {
+  try {
+    const { xprefRule } = req.body;
+    
+    if (!xprefRule) {
+      return res.status(400).json({ error: 'Missing xprefRule in request body' });
+    }
+    
+    console.log('\n=== P3P Comparison Request ===');
+    console.log('XPref Rule:', xprefRule.id || 'unnamed');
+    console.log('Purpose:', xprefRule.purpose);
+    console.log('Retention:', xprefRule.retention);
+    
+    // Run dynamic comparison
+    const serviceScores = await matchXPrefAgainstServices(xprefRule);
+    
+    // Generate comparison table
+    const comparisonTable = generateComparisonTable(xprefRule, serviceScores);
+    
+    console.log('Comparison Results:');
+    console.log(`  Google: ${serviceScores.google.comparison.percentage}%`);
+    console.log(`  Apple: ${serviceScores.apple.comparison.percentage}%`);
+    console.log(`  OSM: ${serviceScores.osm.comparison.percentage}%`);
+    console.log(`  Recommended: ${comparisonTable.recommendation.service}`);
+    
+    res.json({
+      success: true,
+      comparisonTable,
+      serviceScores: {
+        google: {
+          name: 'Google Maps',
+          percentage: serviceScores.google.comparison.percentage,
+          matches: serviceScores.google.comparison.matches,
+          mismatches: serviceScores.google.comparison.mismatches
+        },
+        apple: {
+          name: 'Apple Maps',
+          percentage: serviceScores.apple.comparison.percentage,
+          matches: serviceScores.apple.comparison.matches,
+          mismatches: serviceScores.apple.comparison.mismatches
+        },
+        osm: {
+          name: 'OpenStreetMap',
+          percentage: serviceScores.osm.comparison.percentage,
+          matches: serviceScores.osm.comparison.matches,
+          mismatches: serviceScores.osm.comparison.mismatches
+        }
+      },
+      recommendation: comparisonTable.recommendation
+    });
+    
+  } catch (error) {
+    console.error('P3P Comparison Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to compare with P3P policies',
+      message: error.message 
+    });
+  }
+});
+
+// Get extracted fields for debugging/display
+app.post('/api/comparison/extract-fields', async (req, res) => {
+  try {
+    const { xprefRule } = req.body;
+    
+    if (!xprefRule) {
+      return res.status(400).json({ error: 'Missing xprefRule' });
+    }
+    
+    const xprefFields = extractAllXPrefFields(xprefRule);
+    const policies = await loadAllP3PPolicies();
+    
+    const p3pFields = {
+      google: policies.google.statements.length > 0 
+        ? extractAllP3PFields(policies.google.statements[0]) 
+        : {},
+      apple: policies.apple.statements.length > 0 
+        ? extractAllP3PFields(policies.apple.statements[0]) 
+        : {},
+      osm: policies.osm.statements.length > 0 
+        ? extractAllP3PFields(policies.osm.statements[0]) 
+        : {}
+    };
+    
+    res.json({
+      success: true,
+      xprefFields,
+      p3pFields,
+      fieldCount: {
+        xpref: Object.keys(xprefFields).length,
+        google: Object.keys(p3pFields.google).length,
+        apple: Object.keys(p3pFields.apple).length,
+        osm: Object.keys(p3pFields.osm).length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Field extraction error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test endpoint to verify P3P loading
+app.get('/api/p3p/test', async (req, res) => {
+  try {
+    const policies = await loadAllP3PPolicies();
+    
+    res.json({
+      success: true,
+      loaded: {
+        google: {
+          name: policies.google.name,
+          statementCount: policies.google.statements.length,
+          hasRawPolicy: !!policies.google.rawPolicy
+        },
+        apple: {
+          name: policies.apple.name,
+          statementCount: policies.apple.statements.length,
+          hasRawPolicy: !!policies.apple.rawPolicy
+        },
+        osm: {
+          name: policies.osm.name,
+          statementCount: policies.osm.statements.length,
+          hasRawPolicy: !!policies.osm.rawPolicy
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ================================================================================

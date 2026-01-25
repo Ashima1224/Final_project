@@ -2,7 +2,12 @@
 // Handles rule conflicts, evaluation, and final decision making
 
 const { PET_HIERARCHY, CONTEXT_TYPES } = require('./questionnaire');
-const { findMatchingPolicy, matchPolicyToPreference } = require('./policyMatcher');
+const { 
+  findMatchingPolicy, 
+  matchPolicyToPreference,
+  matchXPrefAgainstServices,
+  generateComparisonTable
+} = require('./policyMatcher');
 
 /**
  * Phase 1: Stream Evaluation (Dynamic Context Evaluation)
@@ -149,6 +154,10 @@ function evaluateSingleContext(contextCondition, currentContext) {
     reason: 'Condition satisfied'
   };
 }
+
+
+
+
 
 /**
  * Parse context value to numeric if needed
@@ -315,7 +324,7 @@ function handleNoMatch(serviceType, purpose) {
  * Generate final decision output
  * Combines all evaluation phases into a final result
  */
-function generateFinalDecision(streamResult, policyResult, conflictResult) {
+async function generateFinalDecision(streamResult, policyResult, conflictResult) {
   console.log('\n=== Generating Final Decision ===');
   
   const decision = {
@@ -328,8 +337,10 @@ function generateFinalDecision(streamResult, policyResult, conflictResult) {
     finalOutcome: null,
     appliedPETs: [],
     filteredData: [],
-    explanation: []
-  };
+    explanation: [],
+    comparisonTable: null,
+    serviceScores: null
+};
   
   // Determine final outcome
   if (conflictResult.noMatch) {
@@ -369,9 +380,29 @@ function generateFinalDecision(streamResult, policyResult, conflictResult) {
     ruleId: winningRule.id,
     message: getEffectMessage(winningRule.effect)
   };
+
+  // ✨ GENERATE P3P COMPARISON TABLE ✨
+console.log('🗺️ Generating P3P comparison table...');
+try {
+  const serviceScores = await matchXPrefAgainstServices(winningRule);
+  const comparisonTable = generateComparisonTable(winningRule, serviceScores);
   
-  // Determine applied PETs
-  decision.appliedPETs = getAppliedPETs(winningRule);
+  decision.comparisonTable = comparisonTable;
+  decision.serviceScores = serviceScores;
+  
+  console.log('✅ P3P comparison generated:', {
+    google: comparisonTable.scores.google.percentage + '%',
+    apple: comparisonTable.scores.apple.percentage + '%',
+    osm: comparisonTable.scores.osm.percentage + '%',
+    recommendation: comparisonTable.recommendation.service
+  });
+} catch (error) {
+  console.error('❌ Error generating P3P comparison:', error);
+  decision.comparisonTable = null;
+}
+  
+// Determine applied PETs  ← INSERT CODE HERE
+decision.appliedPETs = getAppliedPETs(winningRule);
   
   // Generate filtered data view
   decision.filteredData = generateFilteredDataView(winningRule, policyResult);
@@ -383,7 +414,6 @@ function generateFinalDecision(streamResult, policyResult, conflictResult) {
   
   return decision;
 }
-
 /**
  * Get human-readable message for effect
  */
@@ -580,7 +610,7 @@ function buildExplanation(rule, streamResult, policyResult, conflictResult) {
 /**
  * Full evaluation pipeline
  */
-function evaluatePreferences(rules, serviceType, currentContext) {
+async function evaluatePreferences(rules, serviceType, currentContext) {
   // Phase 1: Stream evaluation
   const streamResult = streamEvaluation(rules, currentContext);
   
@@ -596,7 +626,7 @@ function evaluatePreferences(rules, serviceType, currentContext) {
   }
   
   // Generate final decision
-  const finalDecision = generateFinalDecision(streamResult, policyResult, conflictResult);
+  const finalDecision = await generateFinalDecision(streamResult, policyResult, conflictResult);
   
   return finalDecision;
 }

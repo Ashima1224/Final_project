@@ -1,4 +1,4 @@
-// src/components/UserDashboard.js - Main Dashboard with VS Code-like Sidebar Navigation
+// src/components/UserDashboard.js - Updated with Simplified Service Names
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getQuestionnaire, getServiceQuestionnaire, evaluatePreferences, generateRuleset } from '../api';
@@ -7,17 +7,28 @@ import XPrefBuilder from './XPrefBuilder';
 import ResultDisplay from './ResultDisplay';
 import Results from './Results';
 
+// Simplified service display names
+const SERVICE_DISPLAY_NAMES = {
+  map: 'MAP',
+  emergency: 'EMERGENCY',
+  safety: 'SAFETY',
+  oem: 'OEM',
+  thirdparty: 'THIRD PARTY',
+  app: 'APP',
+  logistic: 'LOGISTIC'
+};
+
 const SERVICE_ICONS = {
   map: '🗺️',
   emergency: '🚨',
   safety: '🛡️',
   oem: '🔧',
-  thirdParty: '🔗',
+  thirdparty: '🔗',
   app: '📱',
   logistic: '🚚'
 };
 
-export default function UserDashboard({ user, onLogout }) {
+export default function UserDashboard({ user, onLogout, onOpenLiveStream }) {
   const [services, setServices] = useState({});
   const [selectedService, setSelectedService] = useState(null);
   const [serviceData, setServiceData] = useState(null);
@@ -28,9 +39,8 @@ export default function UserDashboard({ user, onLogout }) {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictData, setConflictData] = useState(null);
   const [completedServices, setCompletedServices] = useState(new Set());
-  const [activeTab, setActiveTab] = useState('questionnaire'); // questionnaire, rules, results, stream
+  const [activeTab, setActiveTab] = useState('questionnaire');
 
-  // Load all services on mount
   useEffect(() => {
     loadServices();
   }, []);
@@ -46,7 +56,6 @@ export default function UserDashboard({ user, onLogout }) {
     }
   };
 
-  // Load specific service when selected
   const handleServiceSelect = useCallback(async (serviceType) => {
     setSelectedService(serviceType);
     setEvaluationResult(null);
@@ -61,7 +70,6 @@ export default function UserDashboard({ user, onLogout }) {
     }
   }, []);
 
-  // Handle preference save
   const handleSave = useCallback((result) => {
     if (result.ruleset) {
       setGeneratedRules(result.ruleset);
@@ -69,22 +77,17 @@ export default function UserDashboard({ user, onLogout }) {
     }
   }, [selectedService]);
 
-  // Handle evaluation
   const handleEvaluate = useCallback(async (answers, userContexts) => {
     setEvaluating(true);
     
     try {
-      // First generate the ruleset
-      const rulesetResult = await generateRuleset(selectedService, answers, userContexts);
-      setGeneratedRules(rulesetResult);
+          // Rules are already saved by savePreferences, no need to generate again
       
-      // Build current context from user context settings
       const currentContext = {};
       userContexts.forEach(ctx => {
         currentContext[ctx.type] = ctx.value;
       });
-      
-      // Add some mock current values if not set
+
       if (!currentContext.timeOfDay) {
         const hour = new Date().getHours();
         if (hour >= 6 && hour < 12) currentContext.timeOfDay = 'Morning';
@@ -93,10 +96,8 @@ export default function UserDashboard({ user, onLogout }) {
         else currentContext.timeOfDay = 'Night';
       }
       
-      // Run evaluation
       const evalResult = await evaluatePreferences(user.id, selectedService, currentContext);
       
-      // Check for conflicts
       if (evalResult.conflict && evalResult.conflictingRules) {
         setConflictData(evalResult);
         setShowConflictModal(true);
@@ -114,7 +115,6 @@ export default function UserDashboard({ user, onLogout }) {
     }
   }, [user.id, selectedService]);
 
-  // Handle conflict resolution
   const handleConflictResolve = (choice) => {
     if (conflictData) {
       const resolvedResult = {
@@ -134,7 +134,6 @@ export default function UserDashboard({ user, onLogout }) {
     }
   };
 
-  // Render sidebar navigation
   const renderSidebar = () => (
     <div className="sidebar">
       <div className="sidebar-header">
@@ -155,12 +154,47 @@ export default function UserDashboard({ user, onLogout }) {
             onClick={() => handleServiceSelect(key)}
           >
             <span className="icon">{service.icon || SERVICE_ICONS[key] || '📋'}</span>
-            <span className="name">{service.name}</span>
+            <span className="name">{SERVICE_DISPLAY_NAMES[key] || service.name}</span>
             {completedServices.has(key) && (
               <span className="badge">✓</span>
             )}
           </div>
+
         ))}
+      </div>
+{/* ADD THIS ENTIRE SECTION HERE - Between service list and user-info */}
+      <div style={{ padding: '0 16px', marginTop: '16px' }}>
+        <button
+          onClick={onOpenLiveStream}
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            fontWeight: '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>📡</span>
+          Live Stream Dashboard
+        </button>
       </div>
 
       <div className="user-info">
@@ -171,7 +205,6 @@ export default function UserDashboard({ user, onLogout }) {
     </div>
   );
 
-  // Render content tabs
   const renderTabs = () => (
     <div style={{ 
       display: 'flex', 
@@ -215,21 +248,10 @@ export default function UserDashboard({ user, onLogout }) {
       >
         📊 Evaluation Results
       </button>
-      <button
-        className={`btn ${activeTab === 'stream' ? 'btn-primary' : 'btn-secondary'}`}
-        style={{ 
-          borderRadius: '8px 8px 0 0',
-          borderBottom: activeTab === 'stream' ? '2px solid #cba6f7' : 'none',
-          marginBottom: '-2px'
-        }}
-        onClick={() => setActiveTab('stream')}
-      >
-        📡 Live Stream
-      </button>
+    
     </div>
   );
 
-  // Render main content
   const renderContent = () => {
     if (!selectedService) {
       return (
@@ -257,9 +279,9 @@ export default function UserDashboard({ user, onLogout }) {
               gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '16px',
               width: '100%',
-              maxWidth: '700px'
+              maxWidth: '900px'
             }}>
-              {Object.entries(services).slice(0, 4).map(([key, service]) => (
+              {Object.entries(services).map(([key, service]) => (
                 <div
                   key={key}
                   onClick={() => handleServiceSelect(key)}
@@ -276,7 +298,9 @@ export default function UserDashboard({ user, onLogout }) {
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
                 >
                   <div style={{ fontSize: '32px', marginBottom: '8px' }}>{service.icon}</div>
-                  <div style={{ fontWeight: '600', color: '#1e1e2e' }}>{service.name}</div>
+                  <div style={{ fontWeight: '600', color: '#1e1e2e' }}>
+                    {SERVICE_DISPLAY_NAMES[key] || service.name}
+                  </div>
                   <div style={{ fontSize: '12px', color: '#6c7086', marginTop: '4px' }}>
                     {service.questions?.length || 4} questions
                   </div>
@@ -338,27 +362,19 @@ export default function UserDashboard({ user, onLogout }) {
           />
         )}
 
-        {activeTab === 'results' && evaluationResult && (
+      {activeTab === 'results' && evaluationResult && (
           <ResultDisplay
             result={evaluationResult}
             serviceType={selectedService}
             serviceData={serviceData}
+            onOpenLiveStream={onOpenLiveStream}
           />
         )}
 
-        {activeTab === 'stream' && (
-          <Results
-            user={user}
-            serviceType={selectedService}
-            serviceData={serviceData}
-            evaluationResult={evaluationResult}
-          />
-        )}
       </div>
     );
   };
 
-  // Render conflict modal
   const renderConflictModal = () => {
     if (!showConflictModal || !conflictData) return null;
 
