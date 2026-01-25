@@ -1,0 +1,938 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Connected Vehicle Privacy Policy - Complete P3P Implementation
+  ================================================================
+  This document contains P3P-compliant privacy policies for all connected vehicle services.
+  
+  Structure:
+  - 7 Service Types (Map, Emergency, Safety, OEM, ThirdParty, App, Logistic)
+  - 4 Purposes per Service Type (28 total)
+  - 4 Options (a-d) per Purpose (112 total statements)
+  
+  Extensions (namespaced as cv:):
+  - cv:context      → runtime conditions (roadType, timeOfDay, homeDistance, emergencyStatus, speed)
+  - cv:transform    → data transformations (anonymize, generalize, pseudonymize)
+  - cv:processing   → processing modes (localOnly, aggregate, deny, requireConsent)
+  - cv:priority     → conflict resolution weight (higher = stronger preference)
+  
+  Priority Scale:
+  - 100: Emergency Override
+  - 90: Deny / Local-only
+  - 80: Anonymize / Aggregate
+  - 70: Pseudonymize
+  - 60: Generalize / Context-restricted
+  - 40: Allow Precise
+  
+  References:
+  - W3C P3P: https://www.w3.org/TR/P3P/
+  - EDPB Guidelines: https://www.edpb.europa.eu/sites/default/files/consultation/edpb_guidelines_202001_connectedvehicles.pdf
+  - ACEA Principles: https://www.acea.auto/files/ACEA_Principles_of_Data_Protection.pdf
+-->
+
+<POLICIES xmlns="http://www.w3.org/2002/01/P3Pv1"
+          xmlns:cv="urn:connected-vehicle:p3p:ext">
+
+<!-- ============================================================================== -->
+<!-- SERVICE TYPE 1: MAP / NAVIGATION SERVICE                                       -->
+<!-- ============================================================================== -->
+
+<POLICY name="MapNavigationService">
+
+ <?xml version="1.0" encoding="UTF-8"?>
+<POLICIES xmlns="http://www.w3.org/2002/01/P3Pv1">
+  <!-- xmlns:ext="http://uni-stuttgart.de/context-aware-privacy/2026" -->
+  
+  <POLICY name="google-maps-policy" 
+          discuri="https://policies.google.com/privacy">
+    
+    <!-- ========== ENTITY INFO ========== -->
+    <ENTITY>
+      <DATA-GROUP>
+        <DATA ref="#business.name">Google Maps</DATA>
+        <DATA ref="#business.contact-info.online.email">privacy@google.com</DATA>
+      </DATA-GROUP>
+    </ENTITY>
+    
+    <ACCESS><contact-and-other/></ACCESS>
+    
+    
+    <!-- ========== STATEMENT 1: NAVIGATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We collect precise GPS location to provide turn-by-turn navigation and routing.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="yes"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>90 days stored locally on device</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+    <DATA ref="#location.latitude"/>
+    <DATA ref="#location.longitude"/>
+    <DATA ref="#location.heading"/>
+    <DATA ref="#speed.current"/> 
+    <DATA ref="#route.origin" optional="yes"/>
+    <DATA ref="#route.destination" optional="yes"/>
+      </DATA-GROUP>
+
+    <EXTENSION>
+    <xpref:purpose>Navigation</xpref:purpose>
+    <xpref:retention>90d</xpref:retention>
+    </EXTENSION>
+      
+      <!-- EXTENSION: Context-aware rules (enable later)
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+          <ext:VALUE>Residential</ext:VALUE>
+        </ext:CONTEXT>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&lt;100m</ext:VALUE>
+          <ext:VALUE>100m-1km</ext:VALUE>
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 2: TRAFFIC UPDATES ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We collect anonymized location and speed data to provide real-time traffic information.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="no"/>
+        <develop required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+        <delivery/>  <!-- Traffic data partners -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>Aggregated data stored for 30 days</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.latitude"/>
+          <DATA ref="#location.longitude"/>
+          <DATA ref="#speed.current"/>
+          <DATA ref="#traffic.data"/>
+        <!-- EXTENSION: Apply k-anonymity PET
+        <ext:PET method="k-anonymity" k="10"/>
+        -->
+      </DATA-GROUP>
+
+      <EXTENSION>
+      <xpref:purpose>Traffic Detection</xpref:purpose>
+      <xpref:retention>30d</xpref:retention>
+      </EXTENSION>
+      
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+        </ext:CONTEXT>
+        <ext:CONTEXT name="speed">
+          <ext:VALUE>30-80km/h</ext:VALUE>
+          <ext:VALUE>&gt;80km/h</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 3: POI RECOMMENDATIONS ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We use your location to recommend nearby points of interest (restaurants, gas stations, etc.).
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-out"/>
+        <develop required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+        <delivery/>  <!-- Business partners for POI data -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>30 days</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+         <DATA ref="#location.latitude"/>
+        <DATA ref="#location.longitude"/>
+        <DATA ref="#user.bdate.ymd.year" optional="yes"/>  <!-- For age-appropriate suggestions -->
+        <!-- EXTENSION: Generalization PET
+        <ext:PET method="generalization" radius="500m"/>
+        -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>POI / Nearby Suggestions</xpref:purpose>
+      <xpref:retention>30d</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 4: ROUTE OPTIMIZATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We analyze your past routes to suggest optimized paths and predict ETAs.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-out"/>
+        <develop required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>90 days stored locally</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#route.origin"/>
+          <DATA ref="#route.destination"/>
+          <DATA ref="#route.waypoints" optional="yes"/>
+          <DATA ref="#visited.places"/>
+          <DATA ref="#search.history" optional="yes"/>
+          <DATA ref="#speed.current"/>
+          <DATA ref="#traffic.data" optional="yes"/>
+          <DATA ref="#timestamp.data"/>
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Route Optimization</xpref:purpose>
+      <xpref:retention>90d</xpref:retention>
+      </EXTENSION>
+
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 5: LOCATION SHARING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Share your real-time location with selected contacts via Google services.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <contact required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <unrelated/>  <!-- User's chosen contacts -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>Real-time only, not stored</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.latitude"/>
+          <DATA ref="#location.longitude"/>
+          <DATA ref="#location.altitude" optional="yes"/>
+          <DATA ref="#speed.current" optional="yes"/>
+          <DATA ref="#location.heading" optional="yes"/>
+          <DATA ref="#timestamp.data"/>
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Location Sharing</xpref:purpose>
+      <xpref:retention>session</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 6: ADVERTISING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We share generalized location with advertising partners for targeted ads.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <telemarketing required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <other-recipient/>  <!-- Google Ad network -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <indefinitely/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.coarse"/>
+          <DATA ref="#device.identifier" optional="yes"/>
+          <DATA ref="#user.profile" optional="yes"/>
+        <!-- EXTENSION: Generalization PET
+        <ext:PET method="generalization" radius="1km"/>
+        -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Advertising</xpref:purpose>
+      <xpref:retention>indefinite</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 7: LOCATION HISTORY (TIMELINE) ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Store your location history to show visited places and travel patterns in Timeline.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>90 days, auto-delete older data (user configurable)</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+            <DATA ref="#location.latitude"/>
+            <DATA ref="#location.longitude"/>
+            <DATA ref="#visited.places"/>
+            <DATA ref="#timestamp.data"/>
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Location History</xpref:purpose>
+      <xpref:retention>90d</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+          <ext:VALUE>Residential</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+  </POLICY>
+</POLICIES>
+
+
+<!-- Apple Maps P3P  below -->
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<POLICIES xmlns="http://www.w3.org/2002/01/P3Pv1">
+  <!-- xmlns:ext="http://uni-stuttgart.de/context-aware-privacy/2026" -->
+  
+  <POLICY name="apple-maps-policy" 
+          discuri="https://www.apple.com/legal/privacy/">
+    
+    <!-- ========== ENTITY INFO ========== -->
+    <ENTITY>
+      <DATA-GROUP>
+        <DATA ref="#business.name">Apple Maps</DATA>
+        <DATA ref="#business.contact-info.online.email">privacy@apple.com</DATA>
+      </DATA-GROUP>
+    </ENTITY>
+    
+    <ACCESS><contact-and-other/></ACCESS>
+    
+    
+    <!-- ========== STATEMENT 1: NAVIGATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We collect location in anonymized segments (not full routes) for navigation.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="yes"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>Anonymized immediately, no long-term storage</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.latitude"/>
+          <DATA ref="#location.longitude"/>
+  <!-- Note: Apple anonymizes, so fewer fields -->
+        <!-- EXTENSION: Anonymization PET (Apple uses "fuzzing")
+        <ext:PET method="anonymization" technique="route-segmentation"/>
+        -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Navigation</xpref:purpose>
+      <xpref:retention>session</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+          <ext:VALUE>Residential</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 2: TRAFFIC UPDATES ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We collect anonymized location to provide real-time traffic information.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="no"/>
+        <develop required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>Anonymized immediately</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.coarse"/>
+          <DATA ref="#speed.current"/>
+          <DATA ref="#traffic.data"/>
+        <!-- EXTENSION: k-anonymity PET
+        <ext:PET method="k-anonymity" k="10"/>
+        -->
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Traffic Detection</xpref:purpose>
+      <xpref:retention>session</xpref:retention>
+      </EXTENSION>
+
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 3: POI RECOMMENDATIONS ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We use your location (not linked to Apple ID) to suggest nearby places.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.coarse"/>
+          <DATA ref="#poi.interactions" optional="yes"/>
+        <!-- EXTENSION: Generalization PET
+        <ext:PET method="generalization" radius="200m"/>
+        -->
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>POI / Nearby Suggestions</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 4: ROUTE OPTIMIZATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We analyze routes on-device to provide ETA predictions. Data never leaves your device.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-out"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>On-device only, not transmitted</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#route.origin"/>
+          <DATA ref="#route.destination"/>
+          <DATA ref="#speed.current"/>
+        <!-- EXTENSION: Local processing (no transmission)
+        <ext:PET method="local-processing"/>
+        -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Route Optimization</xpref:purpose>
+      <xpref:retention>on-device</xpref:retention>
+      </EXTENSION>
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 5: LOCATION SHARING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Share your location with selected contacts via encrypted channels.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <contact required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <unrelated/>  <!-- User's contacts -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>Real-time only</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#location.latitude"/>
+          <DATA ref="#location.longitude"/>
+          <DATA ref="#speed.current" optional="yes"/>
+          <DATA ref="#timestamp.data"/>
+        <!-- EXTENSION: Encryption
+        <ext:PET method="encryption" standard="end-to-end"/>
+        -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Location Sharing</xpref:purpose>
+      <xpref:retention>session</xpref:retention>
+      </EXTENSION>
+
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 6: ADVERTISING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Apple Maps does not use your location for advertising purposes.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <telemarketing required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <!-- NO DATA COLLECTED FOR ADS -->
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Advertising</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+
+
+      <!-- NOTE: This statement exists only for comparison purposes.
+           Apple does NOT collect location for advertising. -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 7: LOCATION HISTORY ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        "Significant Locations" stored on-device only with Face ID/Touch ID protection.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <tailoring required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <business-practices>On-device only, encrypted</business-practices>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#visited.places"/>
+          <DATA ref="#timestamp.data"/>
+  <!-- Stored on device only, encrypted with hardware protection -->
+        <!-- EXTENSION: Local storage with encryption
+        <ext:PET method="local-storage" encryption="hardware-protected"/>
+        -->
+      </DATA-GROUP>
+      
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Residential</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      <EXTENSION>
+      <xpref:purpose>Location History</xpref:purpose>
+      <xpref:retention>on-device</xpref:retention>
+      </EXTENSION>
+    </STATEMENT>
+    
+  </POLICY>
+</POLICIES>
+
+
+OSM p3p 
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<POLICIES xmlns="http://www.w3.org/2002/01/P3Pv1">
+  <!-- xmlns:ext="http://uni-stuttgart.de/context-aware-privacy/2026" -->
+  
+  <POLICY name="openstreetmap-policy" 
+          discuri="https://osmfoundation.org/wiki/Privacy_Policy">
+    
+    <!-- ========== ENTITY INFO ========== -->
+    <ENTITY>
+      <DATA-GROUP>
+        <DATA ref="#business.name">OpenStreetMap</DATA>
+        <DATA ref="#business.contact-info.online.email">data@osmfoundation.org</DATA>
+      </DATA-GROUP>
+    </ENTITY>
+    
+    <ACCESS><contact-and-other/></ACCESS>
+    
+    
+    <!-- ========== STATEMENT 1: NAVIGATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        We provide routing service. Location data processed in real-time, not stored.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="yes"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#route.origin"/>
+          <DATA ref="#route.destination"/>
+  <!-- OSM: Query only, not stored -->
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Navigation</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="road_type">
+          <ext:VALUE>Highway</ext:VALUE>
+          <ext:VALUE>Regional</ext:VALUE>
+          <ext:VALUE>Residential</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 2: TRAFFIC UPDATES ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        OSM does not provide real-time traffic updates (community contributions only).
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <!-- OSM does NOT collect traffic data -->
+      </DATA-GROUP>
+
+      <EXTENSION>
+      <xpref:purpose>Traffic Detection</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+      
+      <!-- NOTE: This statement exists for comparison.
+           OSM relies on third-party apps for traffic data. -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 3: POI RECOMMENDATIONS ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        POI data comes from community contributions (public database). No personalized tracking.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="no"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+        <public/>  <!-- Map data is public -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <stated-purpose>Query processed, not stored</stated-purpose>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <DATA ref="#location.coarse" optional="yes"/>
+        <!-- OSM uses coarse location for nearby POI query only -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>POI / Nearby Suggestions</xpref:purpose>
+      <xpref:retention>session</xpref:retention>
+      </EXTENSION>
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="proximity_to_home">
+          <ext:VALUE>&gt;1km</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 4: ROUTE OPTIMIZATION ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Route calculation performed server-side, no user profile or history stored.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <current required="no"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+          <DATA ref="#route.origin"/>
+          <DATA ref="#route.destination"/>
+          <!-- Processed for routing calculation, then discarded -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Route Optimization</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 5: LOCATION SHARING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        Location sharing not provided by OSM (third-party apps may offer this feature).
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <contact required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <unrelated/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <!-- OSM does NOT provide location sharing -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Location Sharing</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+      
+      <!-- NOTE: This statement exists for comparison purposes. -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 6: ADVERTISING ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        OpenStreetMap does not use your data for advertising (nonprofit, community-driven).
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <telemarketing required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+      </RECIPIENT>
+      
+      <RETENTION>
+        <no-retention/>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <!-- NO DATA COLLECTED FOR ADS -->
+      </DATA-GROUP>
+      <EXTENSION>
+      <xpref:purpose>Advertising</xpref:purpose>
+      <xpref:retention>none</xpref:retention>
+      </EXTENSION>
+      <!-- NOTE: OSM is nonprofit and does NOT advertise. -->
+      
+    </STATEMENT>
+    
+    
+    <!-- ========== STATEMENT 7: LOCATION HISTORY ========== -->
+    <STATEMENT>
+      <CONSEQUENCE>
+        OSM does not store location history. Contributors' GPS traces are public and permanent.
+      </CONSEQUENCE>
+      
+      <PURPOSE>
+        <develop required="opt-in"/>
+      </PURPOSE>
+      
+      <RECIPIENT>
+        <ours/>
+        <public/>  <!-- GPS traces become public -->
+      </RECIPIENT>
+      
+      <RETENTION>
+        <indefinitely>Contributions are permanent and public</indefinitely>
+      </RETENTION>
+      
+      <DATA-GROUP>
+        <!-- OSM: NO history stored -->
+      </DATA-GROUP>
+      
+      <EXTENSION>
+      <xpref:purpose>Location History</xpref:purpose>
+      <xpref:retention>indefinite</xpref:retention>
+      </EXTENSION>
+
+      <!-- EXTENSION: Context requirements
+      <ext:CONTEXT-REQUIREMENTS>
+        <ext:CONTEXT name="user_role">
+          <ext:VALUE>Contributor</ext:VALUE>
+        </ext:CONTEXT>
+      </ext:CONTEXT-REQUIREMENTS>
+      -->
+      
+    </STATEMENT>
+    
+  </POLICY>
+</POLICIES>
+

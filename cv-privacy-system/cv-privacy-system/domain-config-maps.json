@@ -1,0 +1,443 @@
+{
+  "domain": "Automotive - Navigation Services",
+  "description": "Privacy configuration for car navigation systems comparing Apple Maps, Google Maps, and OpenStreetMap",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-24",
+  "dataTypes": [
+  {
+    "id": "location.precise",
+    "name": "Precise Location",
+    "description": "Exact GPS coordinates with high accuracy"
+  },
+  {
+    "id": "location.coarse",
+    "name": "Coarse Location",
+    "description": "Approximate location at city or region level"
+  },
+  {
+    "id": "location.latitude",
+    "name": "Latitude",
+    "description": "North–south geographic coordinate value"
+  },
+  {
+    "id": "location.longitude",
+    "name": "Longitude",
+    "description": "East–west geographic coordinate value"
+  },
+  {
+    "id": "location.heading",
+    "name": "Heading",
+    "description": "Direction of movement or device orientation in degrees"
+  },
+  {
+    "id": "location.altitude",
+    "name": "Altitude",
+    "description": "Height above sea level measured in meters or feet"
+  },
+  {
+    "id": "speed.current",
+    "name": "Current Speed",
+    "description": "Real-time speed of the user or device"
+  },
+  {
+    "id": "route.origin",
+    "name": "Route Origin",
+    "description": "Starting point location of a route"
+  },
+  {
+    "id": "route.destination",
+    "name": "Route Destination",
+    "description": "Final endpoint location of a route"
+  },
+  {
+    "id": "route.waypoints",
+    "name": "Route Waypoints",
+    "description": "Intermediate stops or checkpoints along a route"
+  },
+  {
+    "id": "search.history",
+    "name": "Search History",
+    "description": "Record of previous searches performed by the user"
+  },
+  {
+    "id": "visited.places",
+    "name": "Visited Places",
+    "description": "Locations previously visited by the user or device"
+  },
+  {
+    "id": "traffic.data",
+    "name": "Traffic Data",
+    "description": "Information about road conditions, congestion, and incidents"
+  },
+  {
+    "id": "poi.interactions",
+    "name": "Point of Interest Interactions",
+    "description": "User interactions with saved or viewed places and landmarks"
+  },
+  {
+    "id": "device.identifier",
+    "name": "Device Identifier",
+    "description": "Unique identifier associated with a user's device"
+  },
+  {
+    "id": "user.profile",
+    "name": "User Profile",
+    "description": "Personal and preference information associated with a user account"
+  },
+  {
+    "id": "timestamp.data",
+    "name": "Timestamp Data",
+    "description": "Date and time information associated with collected events"
+  }
+],
+  "contexts": [
+    {
+      "id": "nearHome",
+      "name": "Near Home",
+      "description": "Within 1km of registered home address",
+      "type": "location",
+      "privacySensitivity": "high",
+      "recommendation": "Use strongest privacy protection"
+    },
+    {
+      "id": "highway",
+      "name": "Highway Driving",
+      "description": "Driving on highway or motorway",
+      "type": "roadType",
+      "privacySensitivity": "medium"
+    },
+    {
+      "id": "urbanArea",
+      "name": "Urban Area",
+      "description": "Driving in city environment",
+      "type": "roadType",
+      "privacySensitivity": "medium"
+    },
+    {
+      "id": "offlineMode",
+      "name": "Offline Navigation",
+      "description": "Using downloaded maps without internet",
+      "type": "connectivity",
+      "privacySensitivity": "low",
+      "recommendation": "Maximum privacy - no data transmission"
+    },
+    {
+      "id": "incognitoMode",
+      "name": "Incognito/Private Mode",
+      "description": "Privacy mode enabled in navigation app",
+      "type": "userPreference",
+      "privacySensitivity": "low"
+    }
+  ],
+"retentionPeriods": [
+    {
+      "id": "session",
+      "name": "Session Only",
+      "description": "Data deleted when navigation ends"
+    },
+    {
+      "id": "24h",
+      "name": "24 Hours",
+      "description": "Data stored for 24 hours then deleted"
+    },
+    {
+      "id": "7d",
+      "name": "7 Days",
+      "description": "Data stored for one week"
+    },
+    {
+      "id": "30d",
+      "name": "30 Days",
+      "description": "Data stored for one month"
+    },
+    {
+      "id": "indefinite",
+      "name": "Indefinitely",
+      "description": "Data stored permanently until manually deleted"
+    }
+  ],
+  
+  "privacyActions": [
+    {
+      "id": "ALLOW",
+      "name": "Full Access",
+      "description": "Complete data sharing for best navigation features",
+      "level": 1,
+      "recommendation": "Use only when essential features needed"
+    },
+    {
+      "id": "COARSE_LOCATION",
+      "name": "Coarse Location",
+      "description": "Share approximate location only (city-level)",
+      "level": 2,
+      "impact": "May reduce POI accuracy"
+    },
+    {
+      "id": "ANONYMIZE",
+      "name": "Anonymize",
+      "description": "Remove personal identifiers, use random IDs",
+      "level": 3,
+      "basedOn": "Apple Maps model"
+    },
+    {
+      "id": "GENERALIZE",
+      "name": "Generalize",
+      "description": "Reduce location precision (100m-1km accuracy)",
+      "level": 4,
+      "impact": "Turn-by-turn may be less accurate"
+    },
+    {
+      "id": "DELAY",
+      "name": "Delay Transmission",
+      "description": "Buffer location data, send with 15-30min delay",
+      "level": 5,
+      "impact": "No real-time traffic updates"
+    },
+    {
+      "id": "LOCAL_ONLY",
+      "name": "On-Device Processing",
+      "description": "All navigation processed locally, no server communication",
+      "level": 6,
+      "basedOn": "OpenStreetMap offline apps (Organic Maps, OsmAnd)"
+    },
+    {
+      "id": "BLOCK",
+      "name": "Block All",
+      "description": "No data sharing, offline maps only",
+      "level": 7,
+      "recommendation": "Use OpenStreetMap offline"
+    }
+  ],
+  "services": [
+    {
+      "id": "appleMap",
+      "name": "Apple Maps",
+      "provider": "Apple Inc.",
+      "category": "privacy-focused",
+      "icon": "🍎",
+      "description": "Privacy-oriented mainstream navigation with on-device processing",
+      "privacyScore": 8.5,
+      "dataTypes": [
+        {
+          "type": "location.precise",
+          "purpose": "Turn-by-turn navigation",
+          "required": true,
+          "retention": "Converts to coarse after 24hrs",
+          "processing": "On-device + server anonymized",
+          "tied_to_profile": false
+        },
+        {
+          "type": "search.history",
+          "purpose": "Recent searches and frequent locations",
+          "required": false,
+          "retention": "Stays on device unless iCloud sync enabled",
+          "processing": "On-device",
+          "tied_to_profile": false,
+          "user_control": "Can be disabled"
+        },
+        {
+          "type": "route.destination",
+          "purpose": "Navigation routing",
+          "required": true,
+          "retention": "Anonymized after use, random identifiers used",
+          "processing": "Server with random ID",
+          "tied_to_profile": false
+        },
+        {
+          "type": "traffic.data",
+          "purpose": "Real-time traffic and ETA",
+          "required": false,
+          "retention": "Anonymous aggregation",
+          "processing": "Server anonymized",
+          "tied_to_profile": false
+        }
+      ],
+      "privacyFeatures": [
+        "Random identifiers instead of Apple ID",
+        "Location converted to less precise after 24hrs",
+        "Search history stays on device by default",
+        "No cross-app tracking for ads",
+        "Partial offline capability"
+      ],
+      "supportedContexts": ["nearHome", "highway", "urbanArea"],
+      "recommendedPrivacyLevel": "ANONYMIZE",
+      "dataFlowDiagram": "Device → Anonymized Random ID → Apple Servers → Aggregated Traffic"
+    },
+    {
+      "id": "googleMap",
+      "name": "Google Maps",
+      "provider": "Google LLC",
+      "category": "feature-rich",
+      "icon": "🗺️",
+      "description": "Feature-rich navigation with extensive data collection for personalization",
+      "privacyScore": 5.0,
+      "dataTypes": [
+        {
+          "type": "location.precise",
+          "purpose": "Navigation and traffic optimization",
+          "required": true,
+          "retention": "Stored in Google Account indefinitely unless deleted",
+          "processing": "Server-based",
+          "tied_to_profile": true,
+          "tied_to_account": "Google Account"
+        },
+        {
+          "type": "search.history",
+          "purpose": "Personalized recommendations and ads",
+          "required": false,
+          "retention": "Indefinite in Google Account",
+          "processing": "Server-based",
+          "tied_to_profile": true,
+          "user_control": "Can enable Incognito Mode or delete history"
+        },
+        {
+          "type": "visited.places",
+          "purpose": "Timeline feature and personalization",
+          "required": false,
+          "retention": "Indefinite unless Location History disabled",
+          "processing": "Server-based",
+          "tied_to_profile": true,
+          "user_control": "Location History can be disabled"
+        },
+        {
+          "type": "route.origin",
+          "purpose": "Navigation routing",
+          "required": true,
+          "retention": "Stored in account",
+          "processing": "Server-based",
+          "tied_to_profile": true
+        },
+        {
+          "type": "route.destination",
+          "purpose": "Navigation routing",
+          "required": true,
+          "retention": "Stored in account",
+          "processing": "Server-based",
+          "tied_to_profile": true
+        },
+        {
+          "type": "poi.interactions",
+          "purpose": "Personalized POI recommendations",
+          "required": false,
+          "retention": "Indefinite",
+          "processing": "Server-based",
+          "tied_to_profile": true,
+          "used_for": "Ad targeting and cross-service personalization"
+        },
+        {
+          "type": "device.identifier",
+          "purpose": "Device tracking across Google services",
+          "required": false,
+          "retention": "Tied to Google Account",
+          "processing": "Server-based",
+          "tied_to_profile": true
+        }
+      ],
+      "privacyFeatures": [
+        "Incognito Mode (prevents saving to account, but doesn't stop tracking)",
+        "Location History can be disabled",
+        "Auto-delete options (3, 18, 36 months)",
+        "Full offline maps available"
+      ],
+      "privacyConcerns": [
+        "Data tied to Google Account by default",
+        "Used for ad personalization across Google services",
+        "Incognito mode doesn't prevent Google from seeing location",
+        "Extensive cross-service data linking",
+        "Activity shared with Google partners"
+      ],
+      "supportedContexts": ["nearHome", "highway", "urbanArea", "incognitoMode"],
+      "recommendedPrivacyLevel": "GENERALIZE",
+      "dataFlowDiagram": "Device → Google Account ID → Google Servers → Ad Network → Partners"
+    },
+    {
+      "id": "openstreetmap",
+      "name": "OpenStreetMap (OSM)",
+      "provider": "OpenStreetMap Foundation + Community",
+      "category": "privacy-maximum",
+      "icon": "🌍",
+      "description": "Community-driven open map data with zero tracking by default",
+      "privacyScore": 10.0,
+      "dataTypes": [
+        {
+          "type": "location.precise",
+          "purpose": "On-device navigation only",
+          "required": true,
+          "retention": "Never leaves device",
+          "processing": "100% on-device",
+          "tied_to_profile": false,
+          "note": "OSM itself collects NO user data"
+        }
+      ],
+      "privacyFeatures": [
+        "Zero user tracking by OpenStreetMap itself",
+        "No central server tracking",
+        "No user profiles or accounts required",
+        "100% offline capable",
+        "Open-source map data",
+        "No ads, no personalization",
+        "Community-driven, volunteer-based"
+      ],
+      "privacyWarning": "OSM apps (Maps.me, OsmAnd, Organic Maps) may have their own tracking - check each app's privacy policy",
+      "recommendedApps": [
+        {
+          "name": "Organic Maps",
+          "privacy": "Excellent - completely offline, no tracking"
+        },
+        {
+          "name": "OsmAnd",
+          "privacy": "Excellent - offline-first, open source"
+        },
+        {
+          "name": "Maps.me",
+          "privacy": "Fair - may include ads and analytics"
+        }
+      ],
+      "supportedContexts": ["offlineMode", "nearHome", "highway", "urbanArea"],
+      "recommendedPrivacyLevel": "LOCAL_ONLY",
+      "dataFlowDiagram": "Device (Local Processing Only) → No Server Communication"
+    }
+  ],
+  "comparisonMatrix": {
+    "dataStoredOnServer": {
+      "appleMap": "Limited & anonymized",
+      "googleMap": "Extensive",
+      "openstreetmap": "None by default"
+    },
+    "tiedToUserProfile": {
+      "appleMap": "No (random IDs)",
+      "googleMap": "Yes (Google Account)",
+      "openstreetmap": "No"
+    },
+    "personalizedAds": {
+      "appleMap": false,
+      "googleMap": true,
+      "openstreetmap": false
+    },
+    "offlineCapable": {
+      "appleMap": "Partial",
+      "googleMap": "Yes",
+      "openstreetmap": "Complete"
+    },
+    "privacyScore": {
+      "appleMap": 8.5,
+      "googleMap": 5.0,
+      "openstreetmap": 10.0
+    }
+  },
+  "recommendations": {
+    "maxPrivacy": {
+      "service": "OpenStreetMap",
+      "app": "Organic Maps or OsmAnd",
+      "settings": "Complete offline mode, no app analytics"
+    },
+    "balancedPrivacyAndFeatures": {
+      "service": "Apple Maps",
+      "settings": "Disable precise location when not needed, don't sync visited places"
+    },
+    "maxFeatures": {
+      "service": "Google Maps",
+      "settings": "Enable Incognito Mode, disable Location History, use auto-delete"
+    }
+  }
+}
