@@ -26,28 +26,45 @@ const DomainExpertUpload = ({ user, onLogout }) => {
   };
 
   const validateConfigFile = (config) => {
-    const errors = [];
-    if (!config.domain) errors.push('Missing required field: domain');
-    if (!config.dataTypes || !Array.isArray(config.dataTypes)) {
-      errors.push('Missing or invalid field: dataTypes (must be array)');
-    }
-    if (!config.contexts || !Array.isArray(config.contexts)) {
-      errors.push('Missing or invalid field: contexts (must be array)');
-    }
-    if (!config.services || !Array.isArray(config.services)) {
-      errors.push('Missing or invalid field: services (must be array)');
-    }
-    if (config.services) {
-      config.services.forEach((service, idx) => {
-        if (!service.id) errors.push(`Service ${idx + 1}: Missing 'id'`);
-        if (!service.name) errors.push(`Service ${idx + 1}: Missing 'name'`);
-        if (!service.dataTypes || !Array.isArray(service.dataTypes)) {
-          errors.push(`Service ${idx + 1}: Missing or invalid 'dataTypes'`);
-        }
-      });
-    }
-    return errors;
-  };
+  const errors = [];
+  
+  // Accept either 'domain' OR 'configName'
+  if (!config.domain && !config.configName) {
+    errors.push('Missing required field: domain');
+  }
+  
+  if (!config.dataTypes || !Array.isArray(config.dataTypes)) {
+    errors.push('Missing or invalid field: dataTypes (must be array)');
+  }
+  
+  // Accept either 'contexts' OR 'situations'
+  const contexts = config.contexts || config.situations;
+  if (!contexts || !Array.isArray(contexts)) {
+    errors.push('Missing or invalid field: contexts (must be array)');
+  }
+  
+  // Accept either 'services' OR 'purposes'
+  const services = config.services || config.purposes;
+  if (!services || !Array.isArray(services)) {
+    errors.push('Missing or invalid field: services (must be array)');
+  }
+  
+  if (services) {
+    services.forEach((service, idx) => {
+      if (!service.id) errors.push(`Service/Purpose ${idx + 1}: Missing 'id'`);
+      if (!service.name && !service.displayName) {
+        errors.push(`Service/Purpose ${idx + 1}: Missing 'name' or 'displayName'`);
+      }
+      // Accept 'dataTypes', 'usesDataTypes', or 'questions' with 'affectsDataTypes'
+      const hasDataTypes = service.dataTypes || service.usesDataTypes || service.questions;
+      if (!hasDataTypes) {
+        errors.push(`Service/Purpose ${idx + 1}: Missing data type configuration`);
+      }
+    });
+  }
+  
+  return errors;
+};
 
   const handleFileSelect = (file) => {
     if (!file) return;
@@ -423,11 +440,11 @@ const DomainExpertUpload = ({ user, onLogout }) => {
                     </div>
                   </div>
                   <div style={{ fontSize: '13px', color: '#6c757d' }}>
-                    <div><strong>Domain:</strong> {selectedFile.config.domain}</div>
-                    <div><strong>Data Types:</strong> {selectedFile.config.dataTypes?.length || 0}</div>
-                    <div><strong>Contexts:</strong> {selectedFile.config.contexts?.length || 0}</div>
-                    <div><strong>Services:</strong> {selectedFile.config.services?.length || 0}</div>
-                  </div>
+                  <div><strong>Domain:</strong> {selectedFile.config.domain || selectedFile.config.configName}</div>
+                  <div><strong>Data Types:</strong> {selectedFile.config.dataTypes?.length || 0}</div>
+                  <div><strong>Contexts/Situations:</strong> {(selectedFile.config.contexts || selectedFile.config.situations)?.length || 0}</div>
+                  <div><strong>Services/Purposes:</strong> {(selectedFile.config.services || selectedFile.config.purposes)?.length || 0}</div>
+                </div>
                 </div>
 
                 <button
@@ -444,7 +461,7 @@ const DomainExpertUpload = ({ user, onLogout }) => {
                     fontWeight: '600',
                     cursor: uploadStatus === 'uploading' ? 'not-allowed' : 'pointer'
                   }}
-                >
+                  >
                   {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload Configuration'}
                 </button>
               </div>
@@ -466,7 +483,7 @@ const DomainExpertUpload = ({ user, onLogout }) => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Domain</div>
-                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.domain}</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.domain || currentConfig.configName}</div>
                 </div>
                 <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Data Types</div>
@@ -474,11 +491,11 @@ const DomainExpertUpload = ({ user, onLogout }) => {
                 </div>
                 <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Contexts</div>
-                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.contexts?.length || 0}</div>
-                </div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{(currentConfig.contexts || currentConfig.situations)?.length || 0}</div>
+                  </div>
                 <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Services</div>
-                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{currentConfig.services?.length || 0}</div>
+                  <div style={{ fontSize: '18px', fontWeight: '600' }}>{(currentConfig.services || currentConfig.purposes)?.length || 0}</div>
                 </div>
               </div>
 

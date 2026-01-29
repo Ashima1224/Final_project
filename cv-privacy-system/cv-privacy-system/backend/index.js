@@ -112,6 +112,19 @@ app.get('/api/pets', (req, res) => {
 app.post('/api/preferences', (req, res) => {
   const { userId, serviceType, answers, userContexts } = req.body;
   
+  // ========== DEBUG LOGGING ==========
+console.log('\n========== PREFERENCE SAVE REQUEST ==========');
+console.log('User ID:', userId);
+console.log('Service Type:', serviceType);
+console.log('Answers Object:', JSON.stringify(answers, null, 2));
+console.log('Has domainConfig:', !!storage.domainConfig);
+console.log('Has questionAnswers:', !!(answers.questionAnswers));
+console.log('questionAnswers keys:', answers.questionAnswers ? Object.keys(answers.questionAnswers) : 'NONE');
+console.log('Has old format (map-data-type):', !!(answers['map-data-type']));
+console.log('==========================================\n');
+// ========== END DEBUG ==========
+
+
   if (!userId || !serviceType || !answers) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -124,67 +137,136 @@ app.post('/api/preferences', (req, res) => {
 //========== ADD THIS ENTIRE BLOCK HERE ==========
   
 // Special handling for MAP service with domain config
-  if (serviceType === 'map' && storage.domainConfig) {
-    if (answers['map-data-type']) {
-      console.log('✓ Using dynamic MAP preferences');
+  // ========== NEW FORMAT: Situation-based answers ==========
+  if (answers.questionAnswers && Object.keys(answers.questionAnswers).length > 0) {
+    console.log('✓ Using NEW situation-based MAP preferences');
+    
+    const dataTypes = answers.dataTypes || [];
+    const questionAnswers = answers.questionAnswers;
+    
+    // Generate rules for each question answer
+    const generatedRules = [];
+    
+    for (const [questionKey, actionId] of Object.entries(questionAnswers)) {
+      // Parse questionKey: "navigation_location_near_home" → mapping + situation
+      const parts = questionKey.split('_');
+      const situationId = parts[parts.length - 1]; // Last part
+      const contextMappingId = parts.slice(0, -1).join('_'); // Rest
       
-      // Handle multiple data types (comma-separated)
-      const dataTypes = answers['map-data-type'].includes(',') 
-        ? answers['map-data-type'].split(',').map(s => s.trim())
-        : [answers['map-data-type']];
+      // Find action details
+      const action = storage.domainConfig.privacyActions?.find(a => a.id === actionId);
+      if (!action) {
+        console.warn(`Action not found: ${actionId}`);
+        continue;
+      }
       
-      const dynamicPrefs = {
-        dataTypes: dataTypes,
-        privacyLevel: answers['map-privacy'],
-        retention: answers['map-retention']
+      // Find situation details
+      const situation = storage.domainConfig.situations?.find(s => s.id === situationId);
+      if (!situation) {
+        console.warn(`Situation not found: ${situationId}`);
+        continue;
+      }
+      
+      // Map action to PET effect
+      const actionToPET = {
+        'ALLOW': 'ALLOW',
+        'GENERALIZE': 'GENERALIZE',
+        'COARSE_LOCATION': 'GENERALIZE',
+        'ANONYMIZE': 'ANONYMIZE',
+        'K_ANONYMITY': 'ANONYMIZE',
+        'DELAY': 'DELAY',
+        'LOCAL_ONLY': 'LOCAL_ONLY',
+        'BLOCK': 'BLOCK'
       };
+      const effect = actionToPET[actionId] || 'GENERALIZE';
       
-      // Map privacy level to PET effect
-      const effectMap = {
-        'high': 'ANONYMIZE',
-        'medium': 'GENERALIZE',
-        'low': 'ALLOW'
-      };
-      const effect = effectMap[dynamicPrefs.privacyLevel] || 'GENERALIZE';
-      
-      // Map effect to XPref behavior
+      // Map effect to behavior
       const behaviorMap = {
         'ALLOW': 'request',
         'BLOCK': 'block',
         'ANONYMIZE': 'limited',
         'GENERALIZE': 'limited',
-        'DELAY': 'limited'
+        'DELAY': 'limited',
+        'LOCAL_ONLY': 'limited'
       };
       const behavior = behaviorMap[effect] || 'limited';
       
-      // Build XPath condition
-      const dataTypeConditions = dynamicPrefs.dataTypes
-        .map(dt => `name(.)='${dt}'`)
-        .join(' or ');
-      const xpathCondition = `/POLICY/STATEMENT/DATA-GROUP/DATA[${dataTypeConditions}]`;
+      // Priority based on effect
+      const priorityMap = {
+        'BLOCK': 100,
+        'LOCAL_ONLY': 90,
+        'ANONYMIZE': 80,
+        'DELAY': 70,
+        'GENERALIZE': 60,
+        'ALLOW': 40
+      };
+      const priority = priorityMap[effect] || 50;
       
-      // Create XPref-compliant rule
+      // Build contexts for this rule
+      const contexts = [];
+      
+      if (situationId === 'near_home') {
+        contexts.push({ type: 'homeDistance', allowed: ['Near'] });
+      } else if (situationId === 'highway') {
+        contexts.push({ type: 'roadType', allowed: ['Highway'] });
+      } else if (situationId === 'residential') {
+        contexts.push({ type: 'roadType', allowed: ['Residential'] });
+      } else if (situationId === 'night') {
+        contexts.push({ type: 'timeOfDay', allowed: ['Night'] });
+      } else if (situationId === 'emergency') {
+        contexts.push({ type: 'emergencyStatus', value: true });
+      }
+      
+      // Create the rule
       const rule = {
-        id: `map-dynamic-${Date.now()}`,
+        id: `${contextMappingId}-${situationId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         serviceType: 'map',
-        purpose: 'Navigation',
-        dataTypes: dynamicPrefs.dataTypes,
+        purpose: contextMappingId.includes('navigation') ? 'Navigation' : 
+                 contextMappingId.includes('traffic') ? 'Traffic' : 
+                 contextMappingId.includes('poi') ? 'POI' : 'General',
+        dataTypes: dataTypes,
         effect: effect,
         behavior: behavior,
-        retention: dynamicPrefs.retention,
-        priority: dynamicPrefs.privacyLevel === 'high' ? 90 : dynamicPrefs.privacyLevel === 'medium' ? 60 : 40,
-        label: `MAP service with ${dynamicPrefs.privacyLevel} privacy (${dynamicPrefs.dataTypes.length} data type${dynamicPrefs.dataTypes.length > 1 ? 's' : ''})`,
-        xpathCondition: xpathCondition,
-        contexts: [],
-        createdAt: new Date().toISOString()
+        contexts: contexts,
+        priority: priority,
+        label: `${contextMappingId} when ${situation.displayName}: ${action.displayName}`,
+        createdAt: new Date().toISOString(),
+        // Metadata
+        contextMapping: contextMappingId,
+        situation: situationId,
+        situationName: situation.displayName,
+        actionName: action.displayName,
+        actionDescription: action.longDescription
       };
       
-      // Generate XPref XML
-      const dataTypesXml = dynamicPrefs.dataTypes
-        .map(dt => `      <DATA-TYPE>${dt}</DATA-TYPE>`)
-        .join('\n');
-      
-      const rulesetXml = `<?xml version="1.0" encoding="UTF-8"?>
+      generatedRules.push(rule);
+      console.log(`  ✓ Rule: ${rule.label}`);
+    }
+    
+    // Generate XPref XML
+    const rulesXml = generatedRules.map(rule => `
+  <RULE id="${rule.id}" 
+        behavior="${rule.behavior}"
+        description="${rule.label}">
+    <META>
+      <PRIORITY>${rule.priority}</PRIORITY>
+      <EFFECT>${rule.effect}</EFFECT>
+      <PURPOSE>${rule.purpose}</PURPOSE>
+      <SERVICE-TYPE>${serviceType}</SERVICE-TYPE>
+      <CONTEXT-MAPPING>${rule.contextMapping}</CONTEXT-MAPPING>
+      <SITUATION>${rule.situationName}</SITUATION>
+      <ACTION>${rule.actionName}</ACTION>
+      <CREATED>${rule.createdAt}</CREATED>
+    </META>
+    <DATA-TYPES>
+${rule.dataTypes.map(dt => `      <DATA-TYPE>${dt}</DATA-TYPE>`).join('\n')}
+    </DATA-TYPES>
+    <CONTEXTS>
+${rule.contexts.map(ctx => `      <CONTEXT type="${ctx.type}">${JSON.stringify(ctx)}</CONTEXT>`).join('\n')}
+    </CONTEXTS>
+  </RULE>`).join('\n');
+    
+    const rulesetXml = `<?xml version="1.0" encoding="UTF-8"?>
 <RULESET xmlns="http://www.w3.org/2002/01/P3Pv1" 
          service-type="${serviceType}"
          service-name="Map / Navigation"
@@ -193,70 +275,54 @@ app.post('/api/preferences', (req, res) => {
   
   <DESCRIPTION>
     XPref privacy preferences for Map Service
-    Generated from dynamic preference builder
+    Generated from situation-based preference builder
+    ${generatedRules.length} rules for ${dataTypes.length} data types
   </DESCRIPTION>
-  
-  <RULE id="${rule.id}" 
-        behavior="${behavior}"
-        condition="${xpathCondition}"
-        description="${rule.label}">
-    <META>
-      <PRIORITY>${rule.priority}</PRIORITY>
-      <EFFECT>${effect}</EFFECT>
-      <PURPOSE>${rule.purpose}</PURPOSE>
-      <SERVICE-TYPE>${serviceType}</SERVICE-TYPE>
-      <CREATED>${rule.createdAt}</CREATED>
-    </META>
-    <DATA-TYPES>
-${dataTypesXml}
-    </DATA-TYPES>
-    <RETENTION>${dynamicPrefs.retention}</RETENTION>
-    <PRIVACY-LEVEL>${dynamicPrefs.privacyLevel}</PRIVACY-LEVEL>
-  </RULE>
-
+${rulesXml}
 </RULESET>`;
-      
-      const mapRuleset = {
-        rules: [rule],
-        rulesetXml,
-        serviceType: 'map',
-        totalRules: 1,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Store preferences
-      if (!storage.userPreferences.has(userId)) {
-        storage.userPreferences.set(userId, {});
-      }
-      storage.userPreferences.get(userId)[serviceType] = {
-        dynamicPrefs,
-        userContexts: userContexts || [],
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Store rules
-      if (!storage.savedRules.has(userId)) {
-        storage.savedRules.set(userId, []);
-      }
-      const existingRules = storage.savedRules.get(userId);
-      const filteredRules = existingRules.filter(r => r.serviceType !== serviceType);
-      filteredRules.push(...mapRuleset.rules);
-      storage.savedRules.set(userId, filteredRules);
-      
-      console.log('✓ XPref rule generated successfully');
-      console.log(`  Rule ID: ${rule.id}`);
-      console.log(`  Effect: ${effect}`);
-      console.log(`  Data Types: ${dynamicPrefs.dataTypes.join(', ')}`);
-      
-      return res.json({
-        success: true,
-        serviceType,
-        rulesGenerated: mapRuleset.rules.length,
-        ruleset: mapRuleset,
-        message: `Dynamic preferences saved and ${mapRuleset.rules.length} XPref rule generated`
-      });
+    
+    const mapRuleset = {
+      rules: generatedRules,
+      rulesetXml,
+      serviceType: 'map',
+      totalRules: generatedRules.length,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Store preferences
+    if (!storage.userPreferences.has(userId)) {
+      storage.userPreferences.set(userId, {});
     }
+    storage.userPreferences.get(userId)[serviceType] = {
+      dataTypes,
+      questionAnswers,
+      userContexts: userContexts || [],
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Store rules
+    if (!storage.savedRules.has(userId)) {
+      storage.savedRules.set(userId, []);
+    }
+    const existingRules = storage.savedRules.get(userId);
+    const filteredRules = existingRules.filter(r => r.serviceType !== serviceType);
+    filteredRules.push(...mapRuleset.rules);
+    storage.savedRules.set(userId, filteredRules);
+    
+    console.log(`\n✓ Situation-based XPref rules generated`);
+    console.log(`  Total Rules: ${generatedRules.length}`);
+    console.log(`  Data Types: ${dataTypes.join(', ')}`);
+    console.log(`  Situations: ${[...new Set(generatedRules.map(r => r.situationName))].join(', ')}`);
+    
+    return res.json({
+      success: true,
+      serviceType,
+      rulesGenerated: mapRuleset.rules.length,
+      ruleset: mapRuleset,
+      message: `Situation-based preferences saved and ${mapRuleset.rules.length} XPref rules generated`
+    });
   }
+  // ========== END NEW FORMAT ==========
   
 
   // Validate answers
@@ -707,18 +773,33 @@ app.post('/api/domain/upload', (req, res) => {
   const config = req.body;
   
   // Validate required fields
-  if (!config.domain) {
-    return res.status(400).json({ error: 'Missing required field: domain' });
-  }
-  if (!Array.isArray(config.dataTypes)) {
-    return res.status(400).json({ error: 'dataTypes must be an array' });
-  }
-  if (!Array.isArray(config.contexts)) {
-    return res.status(400).json({ error: 'contexts must be an array' });
-  }
-  if (!Array.isArray(config.services)) {
-    return res.status(400).json({ error: 'services must be an array' });
-  }
+if (!config.domain && !config.configName) {
+  return res.status(400).json({ error: 'Missing required field: domain' });
+}
+// Normalize domain
+if (!config.domain && config.configName) {
+  config.domain = config.configName;
+}
+
+if (!Array.isArray(config.dataTypes)) {
+  return res.status(400).json({ error: 'dataTypes must be an array' });
+}
+
+// Accept either 'contexts' OR 'situations'
+if (!Array.isArray(config.contexts) && !Array.isArray(config.situations)) {
+  return res.status(400).json({ error: 'contexts must be an array' });
+}
+if (!config.contexts && config.situations) {
+  config.contexts = config.situations;
+}
+
+// Accept either 'services' OR 'purposes'
+if (!Array.isArray(config.services) && !Array.isArray(config.purposes)) {
+  return res.status(400).json({ error: 'services must be an array' });
+}
+if (!config.services && config.purposes) {
+  config.services = config.purposes;
+}
   
   // Store configuration
   storage.domainConfig = {

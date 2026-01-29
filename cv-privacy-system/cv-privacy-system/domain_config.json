@@ -1,0 +1,763 @@
+{
+  "configVersion": "1.0",
+  "domain": "Connected Vehicle Privacy Configuration",
+  "configName": "Connected Vehicle Privacy Configuration",
+  "createdBy": "Domain Expert",
+  "createdDate": "2025-01-29",
+  "description": "Dynamic privacy configuration for connected vehicle services",
+  
+  "dataTypes": [
+    {
+      "id": "location_precise_gps",
+      "displayName": "Precise GPS Location",
+      "description": "Exact latitude and longitude coordinates",
+      "category": "Location",
+      "sensitivity": "high",
+      "icon": "📍"
+    },
+    {
+      "id": "location_heading",
+      "displayName": "Movement Direction",
+      "description": "Which direction you're traveling",
+      "category": "Location",
+      "sensitivity": "medium",
+      "icon": "🧭"
+    },
+    {
+      "id": "location_coarse",
+      "displayName": "General Area",
+      "description": "City or neighborhood level location (not exact)",
+      "category": "Location",
+      "sensitivity": "low",
+      "icon": "🗺️"
+    },
+    {
+      "id": "route_origin",
+      "displayName": "Starting Point",
+      "description": "Where your journey begins",
+      "category": "Route",
+      "sensitivity": "high",
+      "icon": "🚀"
+    },
+    {
+      "id": "route_destination",
+      "displayName": "Destination",
+      "description": "Where you're heading",
+      "category": "Route",
+      "sensitivity": "high",
+      "icon": "🎯"
+    },
+    {
+      "id": "route_waypoints",
+      "displayName": "Stops Along Route",
+      "description": "Places you stop during your trip",
+      "category": "Route",
+      "sensitivity": "medium",
+      "icon": "📌"
+    },
+    {
+      "id": "speed_current",
+      "displayName": "Current Speed",
+      "description": "How fast you're traveling right now",
+      "category": "Speed",
+      "sensitivity": "medium",
+      "icon": "⚡"
+    },
+    {
+      "id": "timestamp",
+      "displayName": "Date and Time",
+      "description": "When the data was collected",
+      "category": "Time",
+      "sensitivity": "medium",
+      "icon": "🕐"
+    },
+    {
+      "id": "visited_places",
+      "displayName": "Places You've Visited",
+      "description": "Historical record of your locations",
+      "category": "History",
+      "sensitivity": "high",
+      "icon": "📜"
+    },
+    {
+      "id": "search_history",
+      "displayName": "Search History",
+      "description": "What you've searched for in the app",
+      "category": "History",
+      "sensitivity": "high",
+      "icon": "🔍"
+    },
+    {
+      "id": "poi_interactions",
+      "displayName": "Places You Clicked",
+      "description": "Points of interest you've viewed or selected",
+      "category": "Behavior",
+      "sensitivity": "medium",
+      "icon": "👆"
+    },
+    {
+      "id": "user_profile",
+      "displayName": "Your Account Info",
+      "description": "Profile information and preferences",
+      "category": "Identity",
+      "sensitivity": "high",
+      "icon": "👤"
+    },
+    {
+      "id": "device_identifier",
+      "displayName": "Device ID",
+      "description": "Unique identifier for your device or vehicle",
+      "category": "Identity",
+      "sensitivity": "high",
+      "icon": "📱"
+    }
+  ],
+
+  "situations": [
+    {
+      "id": "near_home",
+      "displayName": "Near Home",
+      "description": "Within 500 meters of your home address",
+      "sensitivityLevel": "very_high",
+      "icon": "🏠",
+      "color": "#d20f39",
+      "explanation": "Locations near home can reveal your home address and daily routines"
+    },
+    {
+      "id": "residential",
+      "displayName": "In Residential Areas",
+      "description": "Driving through neighborhoods",
+      "sensitivityLevel": "high",
+      "icon": "🏘️",
+      "color": "#fe640b",
+      "explanation": "Residential patterns can show where you live or visit regularly"
+    },
+    {
+      "id": "night_time",
+      "displayName": "At Night",
+      "description": "Between 10 PM and 6 AM",
+      "sensitivityLevel": "high",
+      "icon": "🌙",
+      "color": "#7287fd",
+      "explanation": "Nighttime locations reveal where you sleep or spend evenings"
+    },
+    {
+      "id": "parking",
+      "displayName": "Parked or Stopped",
+      "description": "Vehicle stopped for 5+ minutes",
+      "sensitivityLevel": "high",
+      "icon": "🅿️",
+      "color": "#fe640b",
+      "explanation": "Parking locations show where you work, shop, or spend time"
+    },
+    {
+      "id": "highway",
+      "displayName": "On Highway",
+      "description": "Driving on highways or freeways",
+      "sensitivityLevel": "low",
+      "icon": "🛣️",
+      "color": "#40a02b",
+      "explanation": "Highway driving is less sensitive - you're moving fast and far from home"
+    },
+    {
+      "id": "regional_roads",
+      "displayName": "On Regional Roads",
+      "description": "Inter-city or rural roads",
+      "sensitivityLevel": "low",
+      "icon": "🌄",
+      "color": "#40a02b",
+      "explanation": "Regional roads are typically less privacy-sensitive"
+    },
+    {
+      "id": "daytime",
+      "displayName": "During Daytime",
+      "description": "Between 6 AM and 10 PM",
+      "sensitivityLevel": "low",
+      "icon": "☀️",
+      "color": "#40a02b",
+      "explanation": "Daytime activities are generally less sensitive"
+    },
+    {
+      "id": "high_speed",
+      "displayName": "Moving Fast",
+      "description": "Traveling over 80 km/h",
+      "sensitivityLevel": "very_low",
+      "icon": "⚡",
+      "color": "#40a02b",
+      "explanation": "High speeds usually mean highway travel, which is less privacy-sensitive"
+    },
+    {
+      "id": "far_from_home",
+      "displayName": "Far From Home",
+      "description": "More than 5 km from your registered address",
+      "sensitivityLevel": "very_low",
+      "icon": "🌍",
+      "color": "#40a02b",
+      "explanation": "When far from home, location is less likely to reveal personal patterns"
+    },
+    {
+      "id": "emergency",
+      "displayName": "Emergency Situation",
+      "description": "Accident, crash, or breakdown detected",
+      "sensitivityLevel": "critical_override",
+      "icon": "🚨",
+      "color": "#d20f39",
+      "explanation": "During emergencies, accurate data sharing can save lives"
+    }
+  ],
+
+  "privacyActions": [
+    {
+      "id": "ALLOW",
+      "displayName": "Allow (Share as-is)",
+      "shortDescription": "Share data without any changes",
+      "longDescription": "Share your data exactly as collected. Provides the best service quality but lowest privacy protection.",
+      "icon": "✓",
+      "color": "#40a02b",
+      "privacyScore": 1,
+      "utilityScore": 5
+    },
+    {
+      "id": "GENERALIZE",
+      "displayName": "Reduce Precision",
+      "shortDescription": "Make data less exact",
+      "longDescription": "Reduce the accuracy of your data before sharing. For example, round GPS coordinates to 100m radius instead of exact location.",
+      "icon": "📍",
+      "color": "#df8e1d",
+      "privacyScore": 3,
+      "utilityScore": 4,
+      "defaultParameters": {
+        "radius": "100m"
+      }
+    },
+    {
+      "id": "COARSE_LOCATION",
+      "displayName": "General Area Only",
+      "shortDescription": "Share city/region, not exact location",
+      "longDescription": "Share only your city or neighborhood, never your exact position.",
+      "icon": "🗺️",
+      "color": "#fe640b",
+      "privacyScore": 4,
+      "utilityScore": 3,
+      "warning": "Some features like turn-by-turn navigation may not work"
+    },
+    {
+      "id": "ANONYMIZE",
+      "displayName": "Remove Identity",
+      "shortDescription": "Share without linking to you",
+      "longDescription": "Remove all information that could identify you personally before sharing data.",
+      "icon": "👤",
+      "color": "#8839ef",
+      "privacyScore": 4,
+      "utilityScore": 4
+    },
+    {
+      "id": "K_ANONYMITY",
+      "displayName": "Mix With Others",
+      "shortDescription": "Blend with other drivers",
+      "longDescription": "Mix your data with at least 10 other people so you cannot be singled out individually.",
+      "icon": "👥",
+      "color": "#8839ef",
+      "privacyScore": 5,
+      "utilityScore": 3,
+      "defaultParameters": {
+        "k": 10
+      }
+    },
+    {
+      "id": "DELAY",
+      "displayName": "Share Later",
+      "shortDescription": "Delay before sharing",
+      "longDescription": "Wait 15-30 minutes before sharing your data to prevent real-time tracking.",
+      "icon": "⏱️",
+      "color": "#1e66f5",
+      "privacyScore": 4,
+      "utilityScore": 3,
+      "defaultParameters": {
+        "delayMinutes": 15
+      },
+      "warning": "Real-time features like live traffic won't work"
+    },
+    {
+      "id": "LOCAL_ONLY",
+      "displayName": "Keep On Device",
+      "shortDescription": "Process locally, never share",
+      "longDescription": "Process all data on your device. Never send anything to the cloud or service provider.",
+      "icon": "🏠",
+      "color": "#179299",
+      "privacyScore": 5,
+      "utilityScore": 2,
+      "warning": "Cloud-based features won't work"
+    },
+    {
+      "id": "BLOCK",
+      "displayName": "Block (Don't Share)",
+      "shortDescription": "Don't share this data at all",
+      "longDescription": "Do not share this data. Related features will be completely disabled.",
+      "icon": "✗",
+      "color": "#d20f39",
+      "privacyScore": 5,
+      "utilityScore": 1,
+      "warning": "Related features will be disabled"
+    }
+  ],
+
+  "purposes": [
+    {
+      "id": "navigation",
+      "displayName": "Navigation",
+      "description": "Turn-by-turn directions and route guidance",
+      "icon": "🧭",
+      "required": true,
+      "category": "Core Service",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_heading",
+        "route_origin",
+        "route_destination",
+        "route_waypoints",
+        "speed_current"
+      ],
+      "questions": [
+        {
+          "id": "nav_location",
+          "questionText": "How should navigation use your location data?",
+          "helpText": "This controls how precise your location is when getting directions",
+          "affectsDataTypes": [
+            "location_precise_gps",
+            "location_heading",
+            "route_origin",
+            "route_destination"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "GENERALIZE",
+                "COARSE_LOCATION",
+                "LOCAL_ONLY",
+                "BLOCK",
+                "ALLOW"
+              ],
+              "recommendedAction": "GENERALIZE"
+            },
+            {
+              "situationId": "residential",
+              "availableActions": [
+                "GENERALIZE",
+                "LOCAL_ONLY",
+                "ALLOW"
+              ],
+              "recommendedAction": "GENERALIZE"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "ALLOW",
+                "GENERALIZE",
+                "LOCAL_ONLY"
+              ],
+              "recommendedAction": "ALLOW"
+            },
+            {
+              "situationId": "night_time",
+              "availableActions": [
+                "GENERALIZE",
+                "LOCAL_ONLY",
+                "ALLOW"
+              ],
+              "recommendedAction": "LOCAL_ONLY"
+            },
+            {
+              "situationId": "emergency",
+              "availableActions": [
+                "ALLOW",
+                "GENERALIZE"
+              ],
+              "recommendedAction": "ALLOW"
+            }
+          ]
+        },
+        {
+          "id": "nav_speed",
+          "questionText": "How should navigation use your speed for ETA calculations?",
+          "helpText": "Speed data helps calculate accurate arrival times",
+          "affectsDataTypes": [
+            "speed_current"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "DELAY",
+                "ANONYMIZE",
+                "LOCAL_ONLY",
+                "ALLOW"
+              ],
+              "recommendedAction": "DELAY"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "ALLOW",
+                "ANONYMIZE"
+              ],
+              "recommendedAction": "ALLOW"
+            },
+            {
+              "situationId": "emergency",
+              "availableActions": [
+                "ALLOW"
+              ],
+              "recommendedAction": "ALLOW"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "traffic_analytics",
+      "displayName": "Traffic Analytics",
+      "description": "Contribute data to help improve real-time traffic information for all drivers",
+      "icon": "📊",
+      "required": false,
+      "category": "Community Service",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "speed_current",
+        "timestamp"
+      ],
+      "questions": [
+        {
+          "id": "traffic_contribution",
+          "questionText": "Should you contribute to community traffic data?",
+          "helpText": "Your anonymized data helps other drivers avoid congestion",
+          "affectsDataTypes": [
+            "location_precise_gps",
+            "speed_current",
+            "timestamp"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "BLOCK",
+                "DELAY",
+                "K_ANONYMITY",
+                "ANONYMIZE"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "residential",
+              "availableActions": [
+                "BLOCK",
+                "K_ANONYMITY",
+                "DELAY"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "ANONYMIZE",
+                "K_ANONYMITY",
+                "ALLOW",
+                "BLOCK"
+              ],
+              "recommendedAction": "ANONYMIZE"
+            },
+            {
+              "situationId": "night_time",
+              "availableActions": [
+                "BLOCK",
+                "DELAY"
+              ],
+              "recommendedAction": "BLOCK"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "poi_recommendations",
+      "displayName": "POI Recommendations",
+      "description": "Get suggestions for nearby places like restaurants, gas stations, and charging stations",
+      "icon": "📍",
+      "required": false,
+      "category": "Convenience",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "poi_interactions"
+      ],
+      "questions": [
+        {
+          "id": "poi_location",
+          "questionText": "How should POI suggestions use your location?",
+          "helpText": "More precise location gives more relevant nearby suggestions",
+          "affectsDataTypes": [
+            "location_precise_gps",
+            "location_coarse"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "BLOCK",
+                "COARSE_LOCATION",
+                "LOCAL_ONLY"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "far_from_home",
+              "availableActions": [
+                "ALLOW",
+                "GENERALIZE",
+                "ANONYMIZE"
+              ],
+              "recommendedAction": "ALLOW"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "ALLOW",
+                "GENERALIZE"
+              ],
+              "recommendedAction": "ALLOW"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personalization",
+      "displayName": "Personalization",
+      "description": "Customize your experience based on your patterns and preferences",
+      "icon": "⭐",
+      "required": false,
+      "category": "Personalization",
+      "usesDataTypes": [
+        "visited_places",
+        "search_history",
+        "route_origin",
+        "route_destination",
+        "user_profile"
+      ],
+      "questions": [
+        {
+          "id": "personal_history",
+          "questionText": "How should your history be used for personalization?",
+          "helpText": "History helps predict your favorite places and common routes",
+          "affectsDataTypes": [
+            "visited_places",
+            "search_history",
+            "route_origin",
+            "route_destination"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "LOCAL_ONLY",
+                "ANONYMIZE",
+                "BLOCK"
+              ],
+              "recommendedAction": "LOCAL_ONLY"
+            },
+            {
+              "situationId": "night_time",
+              "availableActions": [
+                "LOCAL_ONLY",
+                "BLOCK"
+              ],
+              "recommendedAction": "LOCAL_ONLY"
+            },
+            {
+              "situationId": "daytime",
+              "availableActions": [
+                "ANONYMIZE",
+                "GENERALIZE",
+                "ALLOW"
+              ],
+              "recommendedAction": "ANONYMIZE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "advertisement",
+      "displayName": "Advertisement",
+      "description": "Location-based and personalized advertising",
+      "icon": "📢",
+      "required": false,
+      "category": "Commercial",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "search_history",
+        "poi_interactions",
+        "device_identifier"
+      ],
+      "questions": [
+        {
+          "id": "ad_targeting",
+          "questionText": "How should advertising use your data?",
+          "helpText": "Control how ads are targeted to you based on your location and behavior",
+          "affectsDataTypes": [
+            "location_precise_gps",
+            "location_coarse",
+            "search_history",
+            "device_identifier"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "BLOCK",
+                "COARSE_LOCATION"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "residential",
+              "availableActions": [
+                "BLOCK",
+                "COARSE_LOCATION"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "COARSE_LOCATION",
+                "ANONYMIZE",
+                "BLOCK"
+              ],
+              "recommendedAction": "COARSE_LOCATION"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "location_sharing",
+      "displayName": "Location Sharing",
+      "description": "Share your real-time location with friends and family",
+      "icon": "📲",
+      "required": false,
+      "category": "Social",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "timestamp"
+      ],
+      "questions": [
+        {
+          "id": "sharing_precision",
+          "questionText": "How precise should location sharing be?",
+          "helpText": "Control how accurately others can see your location",
+          "affectsDataTypes": [
+            "location_precise_gps",
+            "timestamp"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "emergency",
+              "availableActions": [
+                "ALLOW"
+              ],
+              "recommendedAction": "ALLOW"
+            },
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "BLOCK",
+                "GENERALIZE",
+                "DELAY"
+              ],
+              "recommendedAction": "BLOCK"
+            },
+            {
+              "situationId": "night_time",
+              "availableActions": [
+                "GENERALIZE",
+                "DELAY",
+                "BLOCK"
+              ],
+              "recommendedAction": "GENERALIZE"
+            },
+            {
+              "situationId": "highway",
+              "availableActions": [
+                "ALLOW",
+                "GENERALIZE"
+              ],
+              "recommendedAction": "ALLOW"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "location_history",
+      "displayName": "Location History",
+      "description": "Store a timeline showing places you've visited over time",
+      "icon": "📜",
+      "required": false,
+      "category": "Storage",
+      "usesDataTypes": [
+        "visited_places",
+        "location_precise_gps",
+        "timestamp",
+        "route_origin",
+        "route_destination"
+      ],
+      "questions": [
+        {
+          "id": "history_storage",
+          "questionText": "How should your location history be stored?",
+          "helpText": "Control whether history is kept on your device or in the cloud",
+          "affectsDataTypes": [
+            "visited_places",
+            "location_precise_gps",
+            "route_origin",
+            "route_destination",
+            "timestamp"
+          ],
+          "situationOptions": [
+            {
+              "situationId": "near_home",
+              "availableActions": [
+                "LOCAL_ONLY",
+                "GENERALIZE",
+                "BLOCK"
+              ],
+              "recommendedAction": "LOCAL_ONLY"
+            },
+            {
+              "situationId": "night_time",
+              "availableActions": [
+                "LOCAL_ONLY",
+                "GENERALIZE",
+                "BLOCK"
+              ],
+              "recommendedAction": "LOCAL_ONLY"
+            },
+            {
+              "situationId": "far_from_home",
+              "availableActions": [
+                "ANONYMIZE",
+                "GENERALIZE",
+                "LOCAL_ONLY",
+                "ALLOW"
+              ],
+              "recommendedAction": "ANONYMIZE"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -4,11 +4,7 @@
   "version": "1.0.0",
   "lastUpdated": "2025-01-24",
   "dataTypes": [
-  {
-    "id": "location.precise",
-    "name": "Precise Location",
-    "description": "Exact GPS coordinates with high accuracy"
-  },
+  
   {
     "id": "location.coarse",
     "name": "Coarse Location",

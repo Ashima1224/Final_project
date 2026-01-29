@@ -224,7 +224,7 @@ ${transformElements.join('\n')}
 /**
  * Generate complete XPref ruleset for a service
  */
-function generateServiceRuleset(serviceType, answers, userContexts = []) {
+  function generateServiceRuleset(serviceType, answers, userContexts = []) {
   const service = QUESTIONNAIRE_DATA[serviceType];
   if (!service) {
     throw new Error(`Unknown service type: ${serviceType}`);
@@ -232,19 +232,127 @@ function generateServiceRuleset(serviceType, answers, userContexts = []) {
 
   const rules = [];
   
-  for (const [questionId, selectedOption] of Object.entries(answers)) {
-
-    if (questionId.includes('map-data') || 
-        questionId.includes('map-privacy') || 
-        questionId.includes('map-retention')) {
-      continue;
-        }
-        
-    try {
-      const { rule, xml } = generateXPrefRule(serviceType, questionId, selectedOption, userContexts);
-      rules.push({ ...rule, xml });
-    } catch (error) {
-      console.error(`Error generating rule for ${questionId}:`, error.message);
+  // ========================================
+  // CHECK IF SIMPLE 3-QUESTION FORMAT
+  // ========================================
+  if (answers['map-data-type'] && answers['map-privacy'] && answers['map-retention']) {
+    console.log('📝 Processing simple questionnaire format');
+    
+    // Get data types (already individual fields, no expansion needed)
+    const dataTypes = Array.isArray(answers['map-data-type']) 
+      ? answers['map-data-type'] 
+      : [answers['map-data-type']];
+    
+    console.log('📊 Data types to protect:', dataTypes);
+    
+    const privacyLevel = answers['map-privacy'];
+    const retention = answers['map-retention'];
+    
+    // Map privacy level to PET effect and priority
+    const privacyMapping = {
+      'high': { 
+        effect: 'ANONYMIZE', 
+        priority: 90,
+        description: 'Strong privacy protection with data anonymization'
+      },
+      'medium': { 
+        effect: 'GENERALIZE', 
+        priority: 70,
+        description: 'Moderate privacy with data generalization'
+      },
+      'low': { 
+        effect: 'ALLOW', 
+        priority: 40,
+        description: 'Basic privacy with minimal restrictions'
+      }
+    };
+    
+    const privacy = privacyMapping[privacyLevel] || privacyMapping['medium'];
+    
+    // Generate unique rule ID
+    const { v4: uuidv4 } = require('uuid');
+    const ruleId = `rule-${uuidv4().substring(0, 8)}`;
+    
+    // Build transforms based on privacy effect
+    const transforms = [];
+    if (privacy.effect === 'ANONYMIZE') {
+      transforms.push({ 
+        type: 'anonymize', 
+        method: 'k-anonymity', 
+        k: 10,
+        description: 'Ensure at least 10 users share same characteristics'
+      });
+    } else if (privacy.effect === 'GENERALIZE') {
+      transforms.push({ 
+        type: 'generalize', 
+        level: 'moderate',
+        description: 'Reduce precision while maintaining utility'
+      });
+    } else if (privacy.effect === 'REDUCE_PRECISION') {
+      transforms.push({
+        type: 'reduce_precision',
+        decimals: 2,
+        description: 'Reduce numerical precision'
+      });
+    }
+    
+    // Build XPath condition for multiple data types
+    const dataConditions = dataTypes.map(dt => 
+      `DATA-GROUP/DATA[@ref='#${dt}']`
+    ).join(' or ');
+    
+    const xpathCondition = `/POLICY/STATEMENT[(${dataConditions})]`;
+    
+    // Create the combined rule
+    const rule = {
+      id: ruleId,
+      serviceType: serviceType,
+      purpose: 'User Privacy Preferences',
+      questionId: 'simple-questionnaire',
+      selectedOption: privacyLevel,
+      effect: privacy.effect,
+      priority: privacy.priority,
+      dataTypes: dataTypes,
+      contexts: userContexts,
+      transforms: transforms,
+      retention: retention,
+      label: `${privacy.effect} - ${dataTypes.length} data type(s)`,
+      description: privacy.description,
+      xpathCondition: xpathCondition,
+      createdAt: new Date().toISOString(),
+      // Additional metadata for UI display
+      userSelections: {
+        dataTypes: dataTypes,
+        privacyLevel: privacyLevel,
+        retention: retention
+      }
+    };
+    
+    // Generate XML representation
+    const xml = buildXPrefRuleXML(rule);
+    
+    rules.push({ ...rule, xml });
+    
+    console.log('✅ Generated combined rule:', {
+      id: ruleId,
+      effect: privacy.effect,
+      priority: privacy.priority,
+      dataTypeCount: dataTypes.length
+    });
+    
+  } else {
+    // ========================================
+    // TRADITIONAL QUESTIONNAIRE FORMAT
+    // ========================================
+    console.log('📝 Processing traditional questionnaire format');
+    
+    for (const [questionId, selectedOption] of Object.entries(answers)) {
+      try {
+        const { rule, xml } = generateXPrefRule(serviceType, questionId, selectedOption, userContexts);
+        rules.push({ ...rule, xml });
+      } catch (error) {
+        console.error(`Error generating rule for ${questionId}:`, error.message);
+      }
     }
   }
 
