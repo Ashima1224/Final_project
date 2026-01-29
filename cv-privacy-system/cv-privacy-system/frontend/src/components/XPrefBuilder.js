@@ -1,7 +1,8 @@
 // src/components/XPrefBuilder.js - XPref Rule Viewer and Editor
 
-import React, { useState, useEffect } from 'react';
-import { getUserRules, generateRuleset } from '../api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { generateRuleset } from '../api';
+
 
 export default function XPrefBuilder({ user, serviceType, answers, userContexts, ruleset, serviceData }) {
   const [rules, setRules] = useState([]);
@@ -9,7 +10,7 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('rules'); // 'rules' or 'xml'
 
-  // If ruleset is passed directly, use it
+  // If ruleset is passed directly, use it 
   useEffect(() => {
     if (ruleset) {
       setRules(ruleset.rules || []);
@@ -17,14 +18,8 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
     }
   }, [ruleset]);
 
-  // If answers are passed, generate rules
-  useEffect(() => {
-    if (!ruleset && user && serviceType && Object.keys(answers || {}).length > 0) {
-      generateRules();
-    }
-  }, [user, serviceType, answers, userContexts, ruleset]);
-
-  const generateRules = async () => {
+  // If answers are passed, generate rules, Wrap with useCallback
+  const generateRules = useCallback(async () => {
     if (!answers || Object.keys(answers).length === 0) return;
     
     setLoading(true);
@@ -39,21 +34,16 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
     } finally {
       setLoading(false);
     }
-  };
+  }, [serviceType, answers, userContexts]);
 
-  const loadUserRules = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const allRules = await getUserRules(user.id);
-      const serviceRules = allRules.filter(r => r.serviceType === serviceType);
-      setRules(serviceRules);
-    } catch (error) {
-      console.error('Failed to load rules:', error);
-    } finally {
-      setLoading(false);
+  // If answers are passed, generate rules
+
+  useEffect(() => {
+    if (!ruleset && user && serviceType && Object.keys(answers || {}).length > 0) {
+      generateRules();
     }
-  };
+  }, [user, serviceType, answers, userContexts, ruleset, generateRules]);
+
 
   const getEffectIcon = (effect) => {
     const icons = {
@@ -188,6 +178,36 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
                 </div>
               )}
 
+              {/* XPath Condition - ADD THIS ENTIRE BLOCK */}
+              {rule.xpathCondition && (
+                <div style={{ 
+                  marginTop: '8px', 
+                  padding: '8px 12px', 
+                  background: '#eff1f5', 
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  border: '1px solid #dce0e8'
+                }}>
+                <strong style={{ 
+                  color: '#45475a', 
+                  fontFamily: 'system-ui',
+                  fontSize: '12px',
+                  display: 'block',
+                  marginBottom: '4px'
+                }}>
+                  XPath Condition:
+                </strong>
+                <code style={{ 
+                  color: '#179299',
+                  wordBreak: 'break-all'
+                }}>
+                  {rule.xpathCondition}
+                </code>
+              </div>
+            )}
+
+
               {/* Data types */}
               <div style={{ 
                 marginTop: '8px', 
@@ -221,28 +241,7 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
           {rulesetXml || 'No XML generated'}
         </div>
       )}
-
-      {/* Legend */}
-      <div style={{ 
-        marginTop: '24px', 
-        padding: '16px', 
-        background: '#f8f9fa', 
-        borderRadius: '8px'
-      }}>
-        <div style={{ fontWeight: '600', marginBottom: '12px', fontSize: '14px' }}>
-          Effect Types (Privacy-Enhancing Techniques):
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {['BLOCK', 'LOCAL_ONLY', 'ANONYMIZE', 'AGGREGATE', 'GENERALIZE', 'REDUCE_PRECISION', 'MASK', 'DELAY', 'ALLOW'].map(effect => (
-            <span key={effect} className={`pet-badge ${effect.toLowerCase()}`}>
-              {getEffectIcon(effect)} {effect}
-            </span>
-          ))}
-        </div>
-        <div style={{ marginTop: '8px', fontSize: '12px', color: '#6c7086' }}>
-          Higher in list = stronger privacy protection
-        </div>
-      </div>
+      
     </div>
   );
 }

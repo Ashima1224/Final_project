@@ -1,0 +1,741 @@
+{
+  "configVersion": "1.0",
+  "domain": "Connected Vehicle Privacy",
+  "createdBy": "Domain Expert",
+  "createdDate": "2025-01-29",
+  "description": "Domain expert configuration for privacy management in connected vehicles",
+  "dataTypes": [
+    {
+      "id": "location_precise_gps",
+      "displayName": "Precise GPS Location",
+      "description": "Exact latitude and longitude coordinates",
+      "category": "Location",
+      "sensitivity": "high",
+      "icon": "📍"
+    },
+    {
+      "id": "location_heading",
+      "displayName": "Movement Direction",
+      "description": "Which direction you're traveling",
+      "category": "Location",
+      "sensitivity": "medium",
+      "icon": "🧭"
+    },
+    {
+      "id": "location_coarse",
+      "displayName": "General Area",
+      "description": "City or neighborhood level location (not exact)",
+      "category": "Location",
+      "sensitivity": "low",
+      "icon": "🗺️"
+    },
+    {
+      "id": "route_origin",
+      "displayName": "Starting Point",
+      "description": "Where your journey begins",
+      "category": "Route",
+      "sensitivity": "high",
+      "icon": "🚀"
+    },
+    {
+      "id": "route_destination",
+      "displayName": "Destination",
+      "description": "Where you're heading",
+      "category": "Route",
+      "sensitivity": "high",
+      "icon": "🎯"
+    },
+    {
+      "id": "route_waypoints",
+      "displayName": "Stops Along Route",
+      "description": "Places you stop during your trip",
+      "category": "Route",
+      "sensitivity": "medium",
+      "icon": "📌"
+    },
+    {
+      "id": "speed_current",
+      "displayName": "Current Speed",
+      "description": "How fast you're traveling right now",
+      "category": "Speed",
+      "sensitivity": "medium",
+      "icon": "⚡"
+    },
+    {
+      "id": "timestamp",
+      "displayName": "Date and Time",
+      "description": "When the data was collected",
+      "category": "Time",
+      "sensitivity": "medium",
+      "icon": "🕐"
+    },
+    {
+      "id": "visited_places",
+      "displayName": "Places You've Visited",
+      "description": "Historical record of your locations",
+      "category": "History",
+      "sensitivity": "high",
+      "icon": "📜"
+    },
+    {
+      "id": "search_history",
+      "displayName": "Search History",
+      "description": "What you've searched for in the app",
+      "category": "History",
+      "sensitivity": "high",
+      "icon": "🔍"
+    },
+    {
+      "id": "poi_interactions",
+      "displayName": "Places You Clicked",
+      "description": "Points of interest you've viewed or selected",
+      "category": "Behavior",
+      "sensitivity": "medium",
+      "icon": "👆"
+    },
+    {
+      "id": "user_profile",
+      "displayName": "Your Account Info",
+      "description": "Profile information and preferences",
+      "category": "Identity",
+      "sensitivity": "high",
+      "icon": "👤"
+    },
+    {
+      "id": "device_identifier",
+      "displayName": "Device ID",
+      "description": "Unique identifier for your device or vehicle",
+      "category": "Identity",
+      "sensitivity": "high",
+      "icon": "📱"
+    }
+  ],
+  "situations": [
+
+    {
+      "id": "residential",
+      "displayName": "In Residential Areas",
+      "description": "Driving through neighborhoods",
+      "sensitivityLevel": "high",
+      "icon": "🏘️",
+      "color": "#fe640b",
+      "explanation": "Residential patterns can show where you live or visit regularly"
+    },
+    {
+      "id": "night_time",
+      "displayName": "At Night",
+      "description": "Between 10 PM and 6 AM",
+      "sensitivityLevel": "high",
+      "icon": "🌙",
+      "color": "#7287fd",
+      "explanation": "Nighttime locations reveal where you sleep or spend evenings"
+    },
+    {
+      "id": "highway",
+      "displayName": "On Highway",
+      "description": "Driving on highways or freeways",
+      "sensitivityLevel": "low",
+      "icon": "🛣️",
+      "color": "#40a02b",
+      "explanation": "Highway driving is less sensitive - you're moving fast and far from home"
+    },
+    {
+      "id": "daytime",
+      "displayName": "During Daytime",
+      "description": "Between 6 AM and 10 PM",
+      "sensitivityLevel": "low",
+      "icon": "☀️",
+      "color": "#40a02b",
+      "explanation": "Daytime activities are generally less sensitive"
+    },
+    {
+      "id": "high_speed",
+      "displayName": "Moving Fast",
+      "description": "Traveling over 80 km/h",
+      "sensitivityLevel": "very_low",
+      "icon": "⚡",
+      "color": "#40a02b",
+      "explanation": "High speeds usually mean highway travel, which is less privacy-sensitive"
+    }
+  ],
+  "services": [
+    {
+      "id": "navigation",
+      "displayName": "Navigation",
+      "description": "Turn-by-turn directions and route guidance",
+      "icon": "🧭",
+      "required": true,
+      "category": "Core Service",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_heading",
+        "route_origin",
+        "route_destination",
+        "route_waypoints",
+        "speed_current"
+      ]
+    },
+    {
+      "id": "traffic_analytics",
+      "displayName": "Traffic Analytics",
+      "description": "Contribute data to help improve real-time traffic information",
+      "icon": "📊",
+      "required": false,
+      "category": "Community Service",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "speed_current",
+        "timestamp"
+      ]
+    },
+    {
+      "id": "poi_recommendations",
+      "displayName": "POI Recommendations",
+      "description": "Get suggestions for nearby places",
+      "icon": "📍",
+      "required": false,
+      "category": "Convenience",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "poi_interactions"
+      ]
+    },
+    {
+      "id": "personalization",
+      "displayName": "Personalization",
+      "description": "Customize your experience based on your patterns",
+      "icon": "⭐",
+      "required": false,
+      "category": "Personalization",
+      "usesDataTypes": [
+        "visited_places",
+        "search_history",
+        "route_origin",
+        "route_destination",
+        "user_profile"
+      ]
+    },
+    {
+      "id": "advertisement",
+      "displayName": "Advertisement",
+      "description": "Location-based and personalized advertising",
+      "icon": "📢",
+      "required": false,
+      "category": "Commercial",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "search_history",
+        "poi_interactions",
+        "device_identifier"
+      ]
+    },
+    {
+      "id": "location_sharing",
+      "displayName": "Location Sharing",
+      "description": "Share your real-time location with friends and family",
+      "icon": "📲",
+      "required": false,
+      "category": "Social",
+      "usesDataTypes": [
+        "location_precise_gps",
+        "timestamp"
+      ]
+    },
+    {
+      "id": "location_history",
+      "displayName": "Location History",
+      "description": "Store a timeline showing places you've visited",
+      "icon": "📜",
+      "required": false,
+      "category": "Storage",
+      "usesDataTypes": [
+        "visited_places",
+        "location_precise_gps",
+        "timestamp",
+        "route_origin",
+        "route_destination"
+      ]
+    }
+  ],
+  "privacyActions": [
+    {
+      "id": "ALLOW",
+      "displayName": "Allow (Share as-is)",
+      "shortDescription": "Share data without any changes",
+      "longDescription": "Share your data exactly as collected. Provides the best service quality but lowest privacy protection.",
+      "icon": "✓",
+      "color": "#40a02b"
+    },
+    {
+      "id": "GENERALIZE",
+      "displayName": "Reduce Precision",
+      "shortDescription": "Make data less exact",
+      "longDescription": "Reduce the accuracy of your data before sharing. For example, round GPS coordinates to 100m radius instead of exact location.",
+      "icon": "📍",
+      "color": "#df8e1d",
+      "defaultParameters": {
+        "radius": "100m"
+      }
+    },
+    {
+      "id": "COARSE_LOCATION",
+      "displayName": "General Area Only",
+      "shortDescription": "Share city/region, not exact location",
+      "longDescription": "Share only your city or neighborhood, never your exact position.",
+      "icon": "🗺️",
+      "color": "#fe640b",
+      "warning": "Some features like turn-by-turn navigation may not work"
+    },
+    {
+      "id": "ANONYMIZE",
+      "displayName": "Remove Identity",
+      "shortDescription": "Share without linking to you",
+      "longDescription": "Remove all personally identifiable information before sharing. Data is shared but cannot be linked back to you.",
+      "icon": "👤",
+      "color": "#fe640b"
+    },
+    {
+      "id": "DELAY",
+      "displayName": "Delay Sharing",
+      "shortDescription": "Share after a time delay",
+      "longDescription": "Share data only after a time delay (e.g., 15 minutes). Reduces real-time tracking capability.",
+      "icon": "⏱️",
+      "color": "#df8e1d",
+      "defaultParameters": {
+        "delay": "15min"
+      }
+    },
+    {
+      "id": "LOCAL_ONLY",
+      "displayName": "Local Processing Only",
+      "shortDescription": "Keep data on your device",
+      "longDescription": "Process data locally on your device without sending to cloud servers. Maximum privacy but may limit features.",
+      "icon": "📱",
+      "color": "#40a02b"
+    },
+    {
+      "id": "BLOCK",
+      "displayName": "Block (Don't Share)",
+      "shortDescription": "Don't collect or share",
+      "longDescription": "Block collection and sharing entirely. Maximum privacy protection but service features will be limited or unavailable.",
+      "icon": "✗",
+      "color": "#d20f39"
+    },
+    {
+      "id": "K_ANONYMITY",
+      "displayName": "Mix With Others",
+      "shortDescription": "Share only when you blend with k others",
+      "longDescription": "Share data only when at least k other users share the same characteristics, ensuring you cannot be singled out.",
+      "icon": "👥",
+      "color": "#df8e1d",
+      "defaultParameters": {
+        "k": 5
+      }
+    },
+    {
+      "id": "DELETE_ON_SESSION_END",
+      "displayName": "Session Only",
+      "shortDescription": "Delete when trip ends",
+      "longDescription": "Data is deleted immediately when your trip or session ends.",
+      "icon": "🗑️",
+      "color": "#40a02b"
+    },
+    {
+      "id": "RETAIN_24H",
+      "displayName": "24 Hours",
+      "shortDescription": "Keep for 24 hours",
+      "longDescription": "Automatically delete data after 24 hours.",
+      "icon": "🕐",
+      "color": "#40a02b"
+    },
+    {
+      "id": "RETAIN_7D",
+      "displayName": "7 Days",
+      "shortDescription": "Keep for 7 days",
+      "longDescription": "Automatically delete data after 1 week.",
+      "icon": "📅",
+      "color": "#40a02b"
+    },
+    {
+      "id": "RETAIN_30D",
+      "displayName": "30 Days",
+      "shortDescription": "Keep for 30 days",
+      "longDescription": "Automatically delete data after 1 month. Recommended for most users.",
+      "icon": "📆",
+      "color": "#df8e1d"
+    },
+    {
+      "id": "RETAIN_90D",
+      "displayName": "90 Days",
+      "shortDescription": "Keep for 90 days",
+      "longDescription": "Automatically delete data after 3 months.",
+      "icon": "📆",
+      "color": "#df8e1d"
+    },
+    {
+      "id": "RETAIN_18M",
+      "displayName": "18 Months",
+      "shortDescription": "Keep for 18 months",
+      "longDescription": "Automatically delete data after 18 months.",
+      "icon": "📆",
+      "color": "#fe640b"
+    },
+    {
+      "id": "RETAIN_UNTIL_DELETION",
+      "displayName": "Until Account Deletion",
+      "shortDescription": "Keep until you delete account",
+      "longDescription": "Keep data until you explicitly delete your account.",
+      "icon": "👤",
+      "color": "#fe640b"
+    },
+    {
+      "id": "RETAIN_INDEFINITE",
+      "displayName": "Indefinitely",
+      "shortDescription": "Keep forever",
+      "longDescription": "Keep data forever unless manually deleted. Lowest privacy protection.",
+      "icon": "♾️",
+      "color": "#d20f39"
+    }
+  ],
+  "contextMappings": {
+    "navigation_location": {
+      "id": "navigation_location",
+      "context": "navigation",
+      "dataCategory": "location",
+      "affectsDataTypes": [
+        "location_precise_gps",
+        "location_heading"
+      ],
+      "situationRules": [
+        {
+          "situationId": "highway",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "residential",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "GENERALIZE"
+        },
+        {
+          "situationId": "daytime",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "night_time",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "GENERALIZE"
+        }
+      ]
+    },
+    "navigation_speed": {
+      "id": "navigation_speed",
+      "context": "navigation",
+      "dataCategory": "speed",
+      "affectsDataTypes": [
+        "speed_current"
+      ],
+      "situationRules": [
+        {
+          "situationId": "highway",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "residential",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ANONYMIZE"
+        },
+        {
+          "situationId": "daytime",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "night_time",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ANONYMIZE"
+        }
+      ]
+    },
+    "traffic_contribution": {
+      "id": "traffic_contribution",
+      "context": "traffic_analytics",
+      "dataCategory": "community_data",
+      "affectsDataTypes": [
+        "location_precise_gps",
+        "speed_current",
+        "timestamp"
+      ],
+      "situationRules": [
+        {
+          "situationId": "highway",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ANONYMIZE"
+        },
+        {
+          "situationId": "residential",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "BLOCK"
+        }
+      ]
+    },
+    "poi_location": {
+      "id": "poi_location",
+      "context": "poi_recommendations",
+      "dataCategory": "location",
+      "affectsDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "poi_interactions"
+      ],
+      "situationRules": [
+        {
+          "situationId": "default",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "GENERALIZE"
+        }
+      ]
+    },
+    "personal_history": {
+      "id": "personal_history",
+      "context": "personalization",
+      "dataCategory": "history",
+      "affectsDataTypes": [
+        "visited_places",
+        "search_history",
+        "route_origin",
+        "route_destination",
+        "user_profile"
+      ],
+      "situationRules": [
+        {
+          "situationId": "default",
+          "allowedActions": [
+            "ALLOW",
+            "ANONYMIZE",
+            "LOCAL_ONLY",
+            "BLOCK"
+          ],
+          "recommendedAction": "ANONYMIZE"
+        }
+      ]
+    },
+    "ad_targeting": {
+      "id": "ad_targeting",
+      "context": "advertisement",
+      "dataCategory": "commercial",
+      "affectsDataTypes": [
+        "location_precise_gps",
+        "location_coarse",
+        "search_history",
+        "poi_interactions",
+        "device_identifier"
+      ],
+      "situationRules": [
+        {
+          "situationId": "default",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "ANONYMIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "BLOCK"
+        }
+      ]
+    },
+    "sharing_precision": {
+      "id": "sharing_precision",
+      "context": "location_sharing",
+      "dataCategory": "social",
+      "affectsDataTypes": [
+        "location_precise_gps",
+        "timestamp"
+      ],
+      "situationRules": [
+        {
+          "situationId": "daytime",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "DELAY",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "night_time",
+          "allowedActions": [
+            "ALLOW",
+            "GENERALIZE",
+            "DELAY",
+            "BLOCK"
+          ],
+          "recommendedAction": "GENERALIZE"
+        }
+      ]
+    },
+    "history_storage": {
+      "id": "history_storage",
+      "context": "location_history",
+      "dataCategory": "storage",
+      "affectsDataTypes": [
+        "visited_places",
+        "location_precise_gps",
+        "route_origin",
+        "route_destination",
+        "timestamp"
+      ],
+      "situationRules": [
+        {
+          "situationId": "daytime",
+          "allowedActions": [
+            "LOCAL_ONLY",
+            "ALLOW",
+            "GENERALIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "ALLOW"
+        },
+        {
+          "situationId": "night_time",
+          "allowedActions": [
+            "LOCAL_ONLY",
+            "ALLOW",
+            "GENERALIZE",
+            "BLOCK"
+          ],
+          "recommendedAction": "LOCAL_ONLY"
+        }
+      ]
+    },
+    "data_retention": {
+      "id": "data_retention",
+      "context": "data_management",
+      "dataCategory": "retention",
+      "affectsDataTypes": [
+        "visited_places",
+        "search_history",
+        "location_precise_gps",
+        "timestamp"
+      ],
+      "situationRules": [
+        {
+          "situationId": "default",
+          "allowedActions": [
+            "DELETE_ON_SESSION_END",
+            "RETAIN_24H",
+            "RETAIN_7D",
+            "RETAIN_30D",
+            "RETAIN_90D",
+            "RETAIN_18M",
+            "RETAIN_UNTIL_DELETION",
+            "RETAIN_INDEFINITE"
+          ],
+          "recommendedAction": "RETAIN_30D"
+        }
+      ]
+    }
+  },
+  "retentionPeriods": [
+    {
+      "id": "session",
+      "displayName": "Session only",
+      "description": "Delete when trip ends"
+    },
+    {
+      "id": "24h",
+      "displayName": "24 hours",
+      "description": "Automatically delete after 24 hours"
+    },
+    {
+      "id": "7d",
+      "displayName": "7 days",
+      "description": "Automatically delete after 1 week"
+    },
+    {
+      "id": "30d",
+      "displayName": "30 days",
+      "description": "Automatically delete after 1 month"
+    },
+    {
+      "id": "90d",
+      "displayName": "90 days",
+      "description": "Automatically delete after 3 months"
+    },
+    {
+      "id": "18m",
+      "displayName": "18 months",
+      "description": "Automatically delete after 18 months"
+    },
+    {
+      "id": "until_deletion",
+      "displayName": "Until account deletion",
+      "description": "Keep until you delete your account"
+    },
+    {
+      "id": "indefinite",
+      "displayName": "Indefinitely",
+      "description": "Keep forever unless manually deleted"
+    }
+  ]
+}

@@ -69,6 +69,14 @@ const QUESTIONNAIRE_DATA = {
     affectsDataTypes: ['location_precise_gps', 'timestamp']
   },
   {
+  id: 'map-retention',
+  purpose: 'Data Retention',
+  questionText: 'How long should your data be kept?',
+  helpText: 'Control how long services can store your location and activity data',
+  contextMappingId: 'data_retention',
+  affectsDataTypes: ['visited_places', 'search_history', 'location_precise_gps', 'timestamp']
+},
+  {
     id: 'map-history',
     purpose: 'Location History',
     questionText: 'How should your location history be stored?',

@@ -146,12 +146,57 @@ console.log('==========================================\n');
     
     // Generate rules for each question answer
     const generatedRules = [];
+
+    // ✅ ADD THIS FUNCTION HERE (before the for loop starts)
+function buildXPathFromContexts(contexts, situationId) {
+  if (!contexts || contexts.length === 0) {
+    return `/POLICY/STATEMENT`;
+  }
+  
+  const conditions = [];
+  
+  for (const ctx of contexts) {
+    if (ctx.type === 'homeDistance' && ctx.allowed) {
+      conditions.push(`@home-distance='${ctx.allowed[0]}'`);
+    } else if (ctx.type === 'roadType' && ctx.allowed) {
+      conditions.push(`@road-type='${ctx.allowed[0]}'`);
+    } else if (ctx.type === 'timeOfDay' && ctx.allowed) {
+      const timeValue = ctx.allowed[0];
+      conditions.push(`@time-of-day='${timeValue}'`);
+    } else if (ctx.type === 'emergencyStatus') {
+      conditions.push(`@emergency='${ctx.value}'`);
+    }
+  }
+  
+  if (conditions.length === 0) {
+    return `/POLICY/STATEMENT`;
+  }
+  
+  return `/POLICY/STATEMENT[${conditions.join(' and ')}]`;
+}
+
     
     for (const [questionKey, actionId] of Object.entries(questionAnswers)) {
-      // Parse questionKey: "navigation_location_near_home" → mapping + situation
-      const parts = questionKey.split('_');
-      const situationId = parts[parts.length - 1]; // Last part
-      const contextMappingId = parts.slice(0, -1).join('_'); // Rest
+  // Parse questionKey: "navigation_location_near_home" → mapping + situation
+  // Find the contextMappingId in domain config to split correctly
+  const mapping = Object.keys(storage.domainConfig.contextMappings || {}).find(
+    mappingId => questionKey.startsWith(mappingId + '_')
+  );
+  
+  if (!mapping) {
+    console.warn(`Could not parse questionKey: ${questionKey}`);
+    continue;
+  }
+
+  const contextMappingId = mapping;
+  const situationId = questionKey.substring(mapping.length + 1); // Everything after "mapping_"
+
+  console.log(`  🔍 Parsing: ${questionKey}`);
+  console.log(`     → Context: ${contextMappingId}`);
+  console.log(`     → Situation ID: ${situationId}`);
+  console.log(`     → Available situations:`, storage.domainConfig.situations?.map(s => s.id) || 'NONE');
+
+  
       
       // Find action details
       const action = storage.domainConfig.privacyActions?.find(a => a.id === actionId);
@@ -163,10 +208,10 @@ console.log('==========================================\n');
       // Find situation details
       const situation = storage.domainConfig.situations?.find(s => s.id === situationId);
       if (!situation) {
-        console.warn(`Situation not found: ${situationId}`);
-        continue;
-      }
-      
+    console.warn(`⚠️ Situation not found: ${situationId}`);
+    console.warn(`   Available: ${storage.domainConfig.situations?.map(s => s.id).join(', ') || 'NONE'}`);
+    continue;
+  }   
       // Map action to PET effect
       const actionToPET = {
         'ALLOW': 'ALLOW',
@@ -206,17 +251,31 @@ console.log('==========================================\n');
       const contexts = [];
       
       if (situationId === 'near_home') {
-        contexts.push({ type: 'homeDistance', allowed: ['Near'] });
-      } else if (situationId === 'highway') {
-        contexts.push({ type: 'roadType', allowed: ['Highway'] });
-      } else if (situationId === 'residential') {
-        contexts.push({ type: 'roadType', allowed: ['Residential'] });
-      } else if (situationId === 'night') {
-        contexts.push({ type: 'timeOfDay', allowed: ['Night'] });
-      } else if (situationId === 'emergency') {
-        contexts.push({ type: 'emergencyStatus', value: true });
-      }
-      
+  contexts.push({ type: 'homeDistance', allowed: ['Near'] });
+} else if (situationId === 'highway') {
+  contexts.push({ type: 'roadType', allowed: ['Highway'] });
+} else if (situationId === 'residential') {
+  contexts.push({ type: 'roadType', allowed: ['Residential'] });
+} else if (situationId === 'night_time') {  // ✅ FIXED: was 'night', now 'night_time'
+  contexts.push({ type: 'timeOfDay', allowed: ['Night'] });
+} else if (situationId === 'emergency') {
+  contexts.push({ type: 'emergencyStatus', value: true });
+} else if (situationId === 'parking') {  // ✅ ADDED: parking situation
+  contexts.push({ type: 'vehicleStatus', allowed: ['Parked'] });
+} else if (situationId === 'daytime') {  // ✅ ADDED: daytime situation
+  contexts.push({ type: 'timeOfDay', allowed: ['Morning', 'Afternoon'] });
+} else if (situationId === 'high_speed') {  // ✅ ADDED: high speed situation
+  contexts.push({ type: 'speed', allowed: ['High'] });
+} else if (situationId === 'far_from_home') {  // ✅ ADDED: far from home situation
+  contexts.push({ type: 'homeDistance', allowed: ['Far'] });
+} else if (situationId === 'regional_roads') {  // ✅ ADDED: regional roads situation
+  contexts.push({ type: 'roadType', allowed: ['Regional'] });
+}
+
+
+// Build XPath condition
+const xpathCondition = buildXPathFromContexts(contexts, situationId);
+
       // Create the rule
       const rule = {
         id: `${contextMappingId}-${situationId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -229,6 +288,8 @@ console.log('==========================================\n');
         behavior: behavior,
         contexts: contexts,
         priority: priority,
+        retention: answers.questionAnswers?.data_retention || '30d',
+        xpathCondition: xpathCondition,
         label: `${contextMappingId} when ${situation.displayName}: ${action.displayName}`,
         createdAt: new Date().toISOString(),
         // Metadata
@@ -241,17 +302,20 @@ console.log('==========================================\n');
       
       generatedRules.push(rule);
       console.log(`  ✓ Rule: ${rule.label}`);
+      console.log(`     XPath: ${rule.xpathCondition}`);
     }
     
     // Generate XPref XML
     const rulesXml = generatedRules.map(rule => `
   <RULE id="${rule.id}" 
         behavior="${rule.behavior}"
+        condition="${rule.xpathCondition || '/POLICY/STATEMENT'}"
         description="${rule.label}">
     <META>
       <PRIORITY>${rule.priority}</PRIORITY>
       <EFFECT>${rule.effect}</EFFECT>
       <PURPOSE>${rule.purpose}</PURPOSE>
+      <RETENTION>${rule.retention || '30d'}</RETENTION>
       <SERVICE-TYPE>${serviceType}</SERVICE-TYPE>
       <CONTEXT-MAPPING>${rule.contextMapping}</CONTEXT-MAPPING>
       <SITUATION>${rule.situationName}</SITUATION>
@@ -880,6 +944,7 @@ app.get('/api/debug/storage', (req, res) => {
     historyCount: storage.evaluationHistory.length
   });
 });
+
 
 // ================================================================================
 // P3P COMPARISON ENDPOINTS
