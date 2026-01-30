@@ -1,7 +1,7 @@
 // src/components/XPrefBuilder.js - XPref Rule Viewer and Editor
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { generateRuleset } from '../api';
+import { getUserRules, generateRuleset} from '../api';
 
 
 export default function XPrefBuilder({ user, serviceType, answers, userContexts, ruleset, serviceData }) {
@@ -134,15 +134,7 @@ export default function XPrefBuilder({ user, serviceType, answers, userContexts,
                     <span className={`pet-badge ${rule.effect.toLowerCase()}`}>
                       {rule.effect}
                     </span>
-                    <span style={{ 
-                      fontSize: '12px', 
-                      color: '#6c7086',
-                      background: '#e5e7eb',
-                      padding: '2px 8px',
-                      borderRadius: '4px'
-                    }}>
-                      Priority: {rule.priority} ({getPriorityLabel(rule.priority)})
-                    </span>
+
                   </div>
                   <div style={{ fontWeight: '600', color: '#1e1e2e', marginBottom: '4px' }}>
                     {rule.purpose}

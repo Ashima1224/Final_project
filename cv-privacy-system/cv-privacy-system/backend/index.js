@@ -147,6 +147,47 @@ console.log('==========================================\n');
     // Generate rules for each question answer
     const generatedRules = [];
 
+
+    // ✅ ADD THIS FUNCTION FIRST (line ~145)
+function getPurposeFromContextMapping(mappingId) {
+  // Map context mapping IDs to friendly purpose names
+  console.log(`🔍 getPurposeFromContextMapping called with: "${mappingId}"`);
+  const purposeMap = {
+    'navigation_location': 'Navigation',
+    'navigation_speed': 'Navigation',
+    'traffic_contribution': 'Traffic Detection',
+    'traffic_analytics': 'Traffic Detection',
+    'poi_location': 'POI / Nearby Suggestions',
+    'poi_recommendations': 'POI / Nearby Suggestions',
+    'personal_history': 'Route Optimization',
+    'route_optimization': 'Route Optimization',
+    'ad_targeting': 'Advertising',
+    'advertisement': 'Advertising',
+    'sharing_precision': 'Location Sharing',
+    'location_sharing': 'Location Sharing',
+    'history_storage': 'Location History',  // ✅ THIS WILL FIX IT
+    'location_history': 'Location History'
+  };
+  
+  // Try exact match first
+  if (purposeMap[mappingId]) {
+    console.log(`✅ Exact match found: "${mappingId}" → "${purposeMap[mappingId]}"`);
+    console.log(`✅ Partial match found: "${mappingId}" → "${value}"`);
+    return purposeMap[mappingId];
+  }
+  
+  // Try partial match (fallback)
+  for (const [key, value] of Object.entries(purposeMap)) {
+    if (mappingId.includes(key) || key.includes(mappingId)) {
+      return value;
+    }
+  }
+
+  console.warn(`⚠️ NO MATCH FOUND for: "${mappingId}", returning 'General'`);
+  return 'General';
+  
+}
+
     // ✅ ADD THIS FUNCTION HERE (before the for loop starts)
 function buildXPathFromContexts(contexts, situationId) {
   if (!contexts || contexts.length === 0) {
@@ -276,13 +317,16 @@ function buildXPathFromContexts(contexts, situationId) {
 // Build XPath condition
 const xpathCondition = buildXPathFromContexts(contexts, situationId);
 
+// ✅ ADD THESE DEBUG LINES HERE
+console.log(`\n🔍 DEBUG: About to get purpose for contextMappingId: "${contextMappingId}"`);
+const purposeResult = getPurposeFromContextMapping(contextMappingId);
+console.log(`🔍 DEBUG: Purpose result: "${purposeResult}"\n`);
+
       // Create the rule
       const rule = {
         id: `${contextMappingId}-${situationId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         serviceType: 'map',
-        purpose: contextMappingId.includes('navigation') ? 'Navigation' : 
-                 contextMappingId.includes('traffic') ? 'Traffic' : 
-                 contextMappingId.includes('poi') ? 'POI' : 'General',
+        purpose: getPurposeFromContextMapping(contextMappingId),
         dataTypes: dataTypes,
         effect: effect,
         behavior: behavior,
@@ -965,10 +1009,35 @@ app.post('/api/comparison/p3p', async (req, res) => {
     console.log('Retention:', xprefRule.retention);
     
     // Run dynamic comparison
-    const serviceScores = await matchXPrefAgainstServices(xprefRule);
+    const rulesByPurpose = {};
+    const allPurposes = [
+      'Navigation',
+      'Traffic Detection', 
+      'POI / Nearby Suggestions',
+      'Route Optimization',
+      'Location Sharing',
+      'Advertising',
+      'Location History'
+    ];
+    // Initialize empty arrays for each purpose
+    allPurposes.forEach(purpose => {
+      rulesByPurpose[purpose] = [];
+    });
+
+    // Group rules by purpose
+    xprefRules.forEach(rule => {
+      const purpose = rule.purpose || 'General';
+      if (!rulesByPurpose[purpose]) {
+        rulesByPurpose[purpose] = [];
+      }
+      rulesByPurpose[purpose].push(rule);
+    });
     
     // Generate comparison table
-    const comparisonTable = generateComparisonTable(xprefRule, serviceScores);
+    const comparisonsByPurpose = {};
+    
+    for (const [purpose, rules] of Object.entries(rulesByPurpose)) {
+      if (rules.length === 0) continue; // Skip purposes with no rules
     
     console.log('Comparison Results:');
     console.log(`  Google: ${serviceScores.google.comparison.percentage}%`);
@@ -1002,7 +1071,8 @@ app.post('/api/comparison/p3p', async (req, res) => {
       recommendation: comparisonTable.recommendation
     });
     
-  } catch (error) {
+  } 
+} catch (error) {
     console.error('P3P Comparison Error:', error);
     res.status(500).json({ 
       error: 'Failed to compare with P3P policies',

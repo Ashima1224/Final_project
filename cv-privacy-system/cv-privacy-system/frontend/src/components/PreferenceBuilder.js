@@ -111,7 +111,9 @@ console.log('=====================');
         <p style={{ margin: 0, color: '#6c7086', fontSize: '14px' }}>Configure your privacy preferences.</p>
       </div>
 
-      {domainConfig?.contextMappings && Object.entries(domainConfig.contextMappings).map(([mappingId, mapping], index) => {
+      {domainConfig?.contextMappings && Object.entries(domainConfig.contextMappings)
+  .filter(([mappingId]) => mappingId !== 'data_retention')  // Skip retention - handled separately
+  .map(([mappingId, mapping], index) => {
         if (!mapping.situationRules || !Array.isArray(mapping.situationRules)) return null;
         return (<div key={mappingId} style={{ marginBottom: '32px', padding: '24px', background: '#fafbfc', borderRadius: '12px', border: '2px solid #e5e7eb' }}>
           <div style={{ fontWeight: '700', color: '#1e1e2e', fontSize: '18px', marginBottom: '8px' }}>

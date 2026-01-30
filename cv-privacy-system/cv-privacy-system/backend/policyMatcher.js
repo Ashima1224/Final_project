@@ -127,6 +127,104 @@ function extractAllP3PFields(statement) {
   // Extract from EXTENSION block (all xpref:* tags)
   if (statement.EXTENSION && statement.EXTENSION[0]) {
     const extension = statement.EXTENSION[0];
+
+    // Direct extraction of xpref: tags
+    if (extension['xpref:purpose']) {
+      fields['purpose'] = Array.isArray(extension['xpref:purpose']) 
+        ? extension['xpref:purpose'][0] 
+        : extension['xpref:purpose'];
+    }
+    
+    if (extension['xpref:retention']) {
+      fields['retention'] = Array.isArray(extension['xpref:retention']) 
+        ? extension['xpref:retention'][0] 
+        : extension['xpref:retention'];
+    }
+    
+    // Also support fields without xpref: prefix
+    if (extension['purpose'] && !fields['purpose']) {
+      fields['purpose'] = Array.isArray(extension['purpose']) 
+        ? extension['purpose'][0] 
+        : extension['purpose'];
+    }
+    
+    if (extension['retention'] && !fields['retention']) {
+      fields['retention'] = Array.isArray(extension['retention']) 
+        ? extension['retention'][0] 
+        : extension['retention'];
+    }
+    
+    // Generic extraction for any xpref: or cv: fields
+    for (const [key, value] of Object.entries(extension)) {
+      if (key.startsWith('xpref:') || key.startsWith('cv:')) {
+        const fieldName = key.replace(/^(xpref|cv):/, '');
+        if (!fields[fieldName]) {
+          fields[fieldName] = Array.isArray(value) ? value[0] : value;
+        }
+      }
+    }
+  }
+  
+  // Extract data types from DATA-GROUP
+  if (statement['DATA-GROUP'] && statement['DATA-GROUP'][0]) {
+    const dataGroup = statement['DATA-GROUP'][0];
+    const dataElements = dataGroup.DATA || [];
+    
+    const dataTypes = dataElements
+      .map(data => {
+        if (data.$ && data.$.ref) {
+          return data.$.ref.replace(/^#/, '');
+        }
+        return null;
+      })
+      .filter(Boolean);
+    
+    if (dataTypes.length > 0) {
+      fields['dataTypes'] = dataTypes;
+    }
+  }
+  
+  // Extract from RETENTION element (if not already in EXTENSION)
+  if (!fields['retention'] && statement.RETENTION && statement.RETENTION[0]) {
+    const retention = statement.RETENTION[0];
+    if (typeof retention === 'string') {
+      fields['retention'] = retention;
+    } else if (retention['business-practices']) {
+      fields['retention'] = retention['business-practices'][0];
+    } else if (retention['no-retention'] !== undefined) {
+      fields['retention'] = 'none';
+    } else if (retention['stated-purpose']) {
+      fields['retention'] = 'session';
+    } else if (retention['indefinitely']) {
+      fields['retention'] = 'indefinite';
+    }
+  }
+  
+  // Extract from PURPOSE element (P3P standard purposes)
+  if (!fields['purpose'] && statement.PURPOSE && statement.PURPOSE[0]) {
+    const purpose = statement.PURPOSE[0];
+    const purposes = Object.keys(purpose).filter(k => k !== '$');
+    if (purposes.length > 0) {
+      // Map P3P purposes to friendly names
+      const purposeMap = {
+        'current': 'Navigation',
+        'tailoring': 'Personalization',
+        'telemarketing': 'Advertising',
+        'develop': 'Development',
+        'contact': 'Communication'
+      };
+      const mappedPurpose = purposes.map(p => purposeMap[p] || p).join(', ');
+      fields['purpose'] = mappedPurpose;
+    }
+  }
+  
+  // Extract CONSEQUENCE (description)
+  if (statement.CONSEQUENCE && statement.CONSEQUENCE[0]) {
+    fields['description'] = statement.CONSEQUENCE[0];
+  }
+  
+  return fields;
+}
     
     for (const [key, value] of Object.entries(extension)) {
       // Handle xpref: prefixed tags
@@ -148,7 +246,6 @@ function extractAllP3PFields(statement) {
         fields[fieldName] = fieldValue;
       }
     }
-  }
   
   // Extract data types from DATA-GROUP
   if (statement['DATA-GROUP'] && statement['DATA-GROUP'][0]) {
@@ -208,7 +305,6 @@ function extractAllP3PFields(statement) {
   }
   
   return fields;
-}
 
 // ============================================================================
 // DYNAMIC COMPARISON ENGINE
